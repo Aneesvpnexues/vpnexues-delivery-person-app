@@ -1,0 +1,10 @@
+{
+  "CORSRules": [
+    {
+      "AllowedOrigins": ["capacitor://localhost", "https://localhost", "http://localhost:5199"],
+      "AllowedMethods": ["PUT"],
+      "AllowedHeaders": ["Content-Type", "x-amz-server-side-encryption"],
+      "MaxAgeSeconds": 3000
+    }
+  ]
+}
