@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PartnerDocumentsReadWrite",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject"],
+      "Resource": "arn:aws:s3:::vpnexues-partner-documents-prod/partners/*"
+    },
+    {
+      "Sid": "DocumentsKmsKey",
+      "Effect": "Allow",
+      "Action": ["kms:GenerateDataKey", "kms:Decrypt"],
+      "Resource": "arn:aws:kms:ap-south-1:<ACCOUNT_ID>:key/<DOCUMENTS_KMS_KEY_ID>"
+    },
+    {
+      "Sid": "SendOtpSms",
+      "Effect": "Allow",
+      "Action": "sns:Publish",
+      "NotResource": "arn:aws:sns:*:*:*"
+    }
+  ]
+}

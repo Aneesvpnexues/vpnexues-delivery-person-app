@@ -1,0 +1,32 @@
+:root {
+  --bg-tone-1: #f7f8f1;
+  --primary-29: #095334;
+  --yellow: #f8d92f;
+  --ink-muted: #47594f;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; overflow: hidden; }
+body { background: var(--bg-tone-1); -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+a { text-decoration: none; color: inherit; }
+button { font: inherit; border: 0; background: none; cursor: pointer; }
+.stage { position: relative; height: 100dvh; width: 100%; overflow: hidden; background: var(--bg-tone-1); }
+/* Invisible element whose padding = the device safe areas; Phone.tsx measures it. */
+.safe-probe {
+  position: absolute; inset: 0; pointer-events: none; visibility: hidden;
+  padding:
+    max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px))
+    max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px))
+    max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))
+    max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+}
+.stage.desk { background: #e9ece4; }
+.phone { width: 412px; height: 915px; position: absolute; top: 0; left: 0; overflow: hidden; background: var(--bg-tone-1); }
+@media (min-width: 601px) { .phone { box-shadow: 0 20px 60px rgba(9,83,52,.18); } }
+.abs { position: absolute; }
+.scroll { overflow-y: auto; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+
+@keyframes spin { to { transform: rotate(360deg) } }
+.spin { animation: spin .8s linear infinite }
+@media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2.4s } }

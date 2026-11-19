@@ -1,0 +1,48 @@
+{
+  "family": "vpnexues-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "runtimePlatform": { "cpuArchitecture": "ARM64", "operatingSystemFamily": "LINUX" },
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/vpnexues-api-execution-role",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/vpnexues-api-task-role",
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "<ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/vpnexues-api:<TAG>",
+      "essential": true,
+      "portMappings": [{ "containerPort": 4000, "protocol": "tcp" }],
+      "stopTimeout": 30,
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "4000" },
+        { "name": "LOG_LEVEL", "value": "info" },
+        { "name": "AWS_REGION", "value": "ap-south-1" },
+        { "name": "DB_SSL", "value": "true" },
+        { "name": "OTP_DEV_ECHO", "value": "false" },
+        { "name": "SMS_PROVIDER", "value": "sns" },
+        { "name": "S3_DOCUMENTS_BUCKET", "value": "vpnexues-partner-documents-prod" },
+        { "name": "CORS_ORIGINS", "value": "capacitor://localhost,https://localhost" }
+      ],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:ap-south-1:<ACCOUNT_ID>:secret:vpnexues/prod/api:DATABASE_URL::" },
+        { "name": "JWT_SECRET", "valueFrom": "arn:aws:secretsmanager:ap-south-1:<ACCOUNT_ID>:secret:vpnexues/prod/api:JWT_SECRET::" },
+        { "name": "DATA_ENCRYPTION_KEY", "valueFrom": "arn:aws:secretsmanager:ap-south-1:<ACCOUNT_ID>:secret:vpnexues/prod/api:DATA_ENCRYPTION_KEY::" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/health || exit 1"],
+        "interval": 30, "timeout": 5, "retries": 3, "startPeriod": 20
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/vpnexues-api",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "api",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}
