@@ -1,71 +1,7 @@
-# =====================================================================
-#  SECRETS: never commit any of these. Real values live in:
-#    - .env on your own PC (local development)
-#    - Render dashboard → Environment (trial hosting)
-#    - AWS Secrets Manager (production)
-# =====================================================================
-
-# Environment files (database password, storage keys, JWT secrets)
-.env
-.env.*
-*.env
-!.env.example
-
-# Certificates and private keys (Supabase/RDS CA, TLS keys, signing keys)
-*.crt
-*.cer
-*.pem
-*.key
-*.p12
-*.pfx
-*.jks
-*.keystore
-id_rsa*
-id_ed25519*
-
-# Cloud credentials and service-account files
-.aws/
-credentials
-credentials.json
-service-account*.json
-*-service-account*.json
-*firebase-adminsdk*.json
-google-services.json
-GoogleService-Info.plist
-.supabase/
-supabase/.temp/
-
-# Database dumps and backups (contain real partner data)
-*.dump
-*.backup
-*.bak
-dump*.sql
-backup*.sql
-*.sql.gz
-# (migrations/*.sql are NOT ignored; they are schema, not data)
-
-# Infrastructure state (can contain secrets in plain text)
-*.tfstate
-*.tfstate.*
-.terraform/
-*.tfvars
-!example.tfvars
-
-# =====================================================================
-#  Build output and tooling
-# =====================================================================
-node_modules/
-dist/
-coverage/
-*.tsbuildinfo
+target/
+uploads/
 *.log
-npm-debug.log*
-.npm/
-
-# OS and editor files
-.DS_Store
-Thumbs.db
-desktop.ini
-.vscode/*
-!.vscode/extensions.json
-.idea/
+*.err
+.pgbin/
+.pgdata/
+pg/
