@@ -1,0 +1,7 @@
+target/
+uploads/
+*.log
+*.err
+.pgbin/
+.pgdata/
+pg/
