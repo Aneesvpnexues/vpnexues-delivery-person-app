@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -71,6 +71,41 @@ class _SignupScreenState extends State<SignupScreen> {
     {'id': -32, 'name': 'Chennai', 'state': 'Tamil Nadu'},
     {'id': -33, 'name': 'Coimbatore', 'state': 'Tamil Nadu'},
     {'id': -34, 'name': 'Madurai', 'state': 'Tamil Nadu'},
+    {'id': -44, 'name': 'Ariyalur', 'state': 'Tamil Nadu'},
+    {'id': -45, 'name': 'Chengalpattu', 'state': 'Tamil Nadu'},
+    {'id': -46, 'name': 'Cuddalore', 'state': 'Tamil Nadu'},
+    {'id': -47, 'name': 'Dharmapuri', 'state': 'Tamil Nadu'},
+    {'id': -48, 'name': 'Dindigul', 'state': 'Tamil Nadu'},
+    {'id': -49, 'name': 'Erode', 'state': 'Tamil Nadu'},
+    {'id': -50, 'name': 'Hosur', 'state': 'Tamil Nadu'},
+    {'id': -51, 'name': 'Kanchipuram', 'state': 'Tamil Nadu'},
+    {'id': -52, 'name': 'Kanyakumari', 'state': 'Tamil Nadu'},
+    {'id': -53, 'name': 'Karur', 'state': 'Tamil Nadu'},
+    {'id': -54, 'name': 'Krishnagiri', 'state': 'Tamil Nadu'},
+    {'id': -55, 'name': 'Kumbakonam', 'state': 'Tamil Nadu'},
+    {'id': -56, 'name': 'Mayiladuthurai', 'state': 'Tamil Nadu'},
+    {'id': -57, 'name': 'Nagapattinam', 'state': 'Tamil Nadu'},
+    {'id': -58, 'name': 'Namakkal', 'state': 'Tamil Nadu'},
+    {'id': -59, 'name': 'Nagercoil', 'state': 'Tamil Nadu'},
+    {'id': -60, 'name': 'Ooty', 'state': 'Tamil Nadu'},
+    {'id': -61, 'name': 'Perambalur', 'state': 'Tamil Nadu'},
+    {'id': -62, 'name': 'Pudukkottai', 'state': 'Tamil Nadu'},
+    {'id': -63, 'name': 'Ramanathapuram', 'state': 'Tamil Nadu'},
+    {'id': -64, 'name': 'Ranipet', 'state': 'Tamil Nadu'},
+    {'id': -65, 'name': 'Sivakasi', 'state': 'Tamil Nadu'},
+    {'id': -66, 'name': 'Sivaganga', 'state': 'Tamil Nadu'},
+    {'id': -67, 'name': 'Tenkasi', 'state': 'Tamil Nadu'},
+    {'id': -68, 'name': 'Thanjavur', 'state': 'Tamil Nadu'},
+    {'id': -69, 'name': 'Theni', 'state': 'Tamil Nadu'},
+    {'id': -70, 'name': 'Thoothukudi', 'state': 'Tamil Nadu'},
+    {'id': -71, 'name': 'Tirunelveli', 'state': 'Tamil Nadu'},
+    {'id': -72, 'name': 'Tiruppur', 'state': 'Tamil Nadu'},
+    {'id': -73, 'name': 'Tiruvallur', 'state': 'Tamil Nadu'},
+    {'id': -74, 'name': 'Tiruvannamalai', 'state': 'Tamil Nadu'},
+    {'id': -75, 'name': 'Tiruvarur', 'state': 'Tamil Nadu'},
+    {'id': -76, 'name': 'Vellore', 'state': 'Tamil Nadu'},
+    {'id': -77, 'name': 'Viluppuram', 'state': 'Tamil Nadu'},
+    {'id': -78, 'name': 'Virudhunagar', 'state': 'Tamil Nadu'},
     {'id': -35, 'name': 'Hyderabad', 'state': 'Telangana'},
     {'id': -36, 'name': 'Agartala', 'state': 'Tripura'},
     {'id': -37, 'name': 'Lucknow', 'state': 'Uttar Pradesh'},
@@ -390,7 +425,7 @@ class _SignupScreenState extends State<SignupScreen> {
               top: 689,
               width: 300,
               controller: _ref,
-              hint: 'e.g. VPN–ANNA25',
+              hint: 'e.g. VPNâ€“ANNA25',
               iconAsset: 'assets/ui/gift.svg',
             ),
 
@@ -427,7 +462,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
             PrimaryButton(
               y: 803.88,
-              label: _busy ? 'SENDING…' : 'SEND OTP',
+              label: _busy ? 'SENDINGâ€¦' : 'SEND OTP',
               onTap: _busy ? null : _sendOtp,
             ),
             DTxt(
@@ -469,7 +504,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextSpan(children: [
                 TextSpan(text: visible[i]['name'].toString()),
                 TextSpan(
-                  text: '  · ${visible[i]['state']}',
+                  text: '  Â· ${visible[i]['state']}',
                   style: const TextStyle(color: C.muted, fontWeight: FontWeight.w400, fontSize: 13),
                 ),
               ]),
