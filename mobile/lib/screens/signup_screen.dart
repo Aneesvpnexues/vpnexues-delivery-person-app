@@ -237,7 +237,7 @@ class _SignupScreenState extends State<SignupScreen> {
       final res = await widget.state.signupStart(
         fullName: name,
         phone: phone,
-        cityId: cityId,
+        cityId: selectedCityId,
         vehicleType: vehicles.firstWhere((v) => v.$1 == _vehicle).$2,
         referralCode: _ref.text,
       );
@@ -251,7 +251,7 @@ class _SignupScreenState extends State<SignupScreen> {
           onResend: () => widget.state.signupStart(
             fullName: name,
             phone: phone,
-            cityId: cityId,
+            cityId: selectedCityId,
             vehicleType: vehicles.firstWhere((v) => v.$1 == _vehicle).$2,
             referralCode: _ref.text,
           ),
