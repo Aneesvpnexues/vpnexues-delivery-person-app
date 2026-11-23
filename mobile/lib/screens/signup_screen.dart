@@ -180,25 +180,29 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _pickCity = true);
   }
 
-  void _pick(Map<String, dynamic> c) {
-    FocusScope.of(context).unfocus();
-    final name = c['name'].toString().toLowerCase();
-    final state = c['state'].toString().toLowerCase();
-    Map<String, dynamic>? server;
+  Map<String, dynamic>? _serverCityByName(String name, [String? state]) {
+    final q = name.trim().toLowerCase();
+    final st = state?.trim().toLowerCase();
     for (final s in widget.state.cities) {
-      if (s['name'].toString().toLowerCase() == name && s['state'].toString().toLowerCase() == state) {
-        server = s;
-        break;
+      if (s['name'].toString().toLowerCase() == q &&
+          (st == null || st.isEmpty || s['state'].toString().toLowerCase() == st)) {
+        return s;
       }
     }
+    return null;
+  }
+
+  void _pick(Map<String, dynamic> c) {
+    FocusScope.of(context).unfocus();
+    final server = _serverCityByName(c['name'].toString(), c['state']?.toString());
     setState(() {
-      _cityId = server != null ? server['id'] as int : (c['id'] as int) > 0 ? c['id'] as int : null;
+      _cityId = server != null ? server['id'] as int : null;
       _cityCtl.text = c['name'].toString();
       _cityCtl.selection = TextSelection.collapsed(offset: _cityCtl.text.length);
       _pickCity = false;
     });
     if (_cityId == null) {
-      showToast(context, '${c['name']} is not serviceable yet. Please choose a nearby active city.');
+      showToast(context, '${c['name']} is not serviceable yet. Please choose an active service city.');
     }
   }
 
@@ -213,8 +217,15 @@ class _SignupScreenState extends State<SignupScreen> {
       showToast(context, 'Enter your 10-digit mobile number');
       return;
     }
-    if (_cityId == null) {
-      showToast(context, 'Choose your city');
+    var cityId = _cityId;
+    if (cityId == null) {
+      final typed = _serverCityByName(_cityCtl.text);
+      if (typed != null) cityId = typed['id'] as int;
+    }
+    if (cityId == null) {
+      showToast(context, widget.state.citiesFailed && widget.state.cities.isEmpty
+          ? 'Could not load service cities. Check connection and retry.'
+          : 'Choose a service city from suggestions');
       return;
     }
     if (!_agree) {
@@ -226,7 +237,7 @@ class _SignupScreenState extends State<SignupScreen> {
       final res = await widget.state.signupStart(
         fullName: name,
         phone: phone,
-        cityId: _cityId!,
+        cityId: cityId,
         vehicleType: vehicles.firstWhere((v) => v.$1 == _vehicle).$2,
         referralCode: _ref.text,
       );
@@ -240,7 +251,7 @@ class _SignupScreenState extends State<SignupScreen> {
           onResend: () => widget.state.signupStart(
             fullName: name,
             phone: phone,
-            cityId: _cityId!,
+            cityId: cityId,
             vehicleType: vehicles.firstWhere((v) => v.$1 == _vehicle).$2,
             referralCode: _ref.text,
           ),
