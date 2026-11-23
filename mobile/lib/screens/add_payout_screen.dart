@@ -193,15 +193,12 @@ class _AddPayoutScreenState extends State<AddPayoutScreen> {
         suffix: _ifscOk ? Pill(label: 'Valid', bg: pillOk.bg, fg: pillOk.fg, dot: pillOk.fg) : null,
       ),
       DBox(x: 20, y: top + 368, w: 372, h: 73, r: 22, bg: const Color(0xFFEEF5DB), border: Border.all(color: const Color(0xFFDDEBC3))),
-      DBox(
-        x: 35,
-        y: top + 383,
-        w: 44,
-        h: 44,
-        r: 14,
-        bg: Colors.white,
-        border: Border.all(color: const Color(0xFFE3EAD8)),
-        child: const Icon(LucideIcons.landmark, size: 20, color: C.green),
+      Positioned(
+        left: 35,
+        top: top + 383,
+        width: 44,
+        height: 44,
+        child: const Center(child: Icon(LucideIcons.landmark, size: 20, color: C.green)),
       ),
       Positioned(
         left: 90,
@@ -212,7 +209,13 @@ class _AddPayoutScreenState extends State<AddPayoutScreen> {
           controller: _bank,
           style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: C.ink),
           decoration: const InputDecoration(
+            filled: false,
             border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
             isDense: true,
             contentPadding: EdgeInsets.zero,
             hintText: 'Bank name (e.g. HDFC Bank)',
@@ -266,15 +269,12 @@ class _AddPayoutScreenState extends State<AddPayoutScreen> {
   List<Widget> _upiBody() {
     return [
       DBox(x: 20, y: 178, w: 372, h: 90, r: 24, bg: const Color(0xFFEEF5DB), border: Border.all(color: const Color(0xFFDDEBC3))),
-      DBox(
-        x: 37,
-        y: 197,
-        w: 52,
-        h: 52,
-        r: 16,
-        bg: Colors.white,
-        border: Border.all(color: const Color(0xFFE3EAD8)),
-        child: const Icon(LucideIcons.zap, size: 24, color: C.green),
+      Positioned(
+        left: 37,
+        top: 197,
+        width: 52,
+        height: 52,
+        child: const Center(child: Icon(LucideIcons.zap, size: 24, color: C.green)),
       ),
       const DTxt('Get paid to UPI', x: 102, y: 195, s: 16, wt: FontWeight.w700, lh: 22.4),
       const DTxt('Instant payouts land in seconds, any day of the week.',

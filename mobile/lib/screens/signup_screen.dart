@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -20,6 +22,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _name = TextEditingController();
   final _mobile = TextEditingController();
   final _ref = TextEditingController();
+  final _cityCtl = TextEditingController();
   int? _cityId;
   bool _pickCity = false;
   String _vehicle = 'Motorbike';
@@ -34,11 +37,58 @@ class _SignupScreenState extends State<SignupScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    widget.state.addListener(_onState);
+    if (widget.state.cities.isEmpty) widget.state.loadCities();
+  }
+
+  void _onState() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    widget.state.removeListener(_onState);
     _name.dispose();
     _mobile.dispose();
     _ref.dispose();
+    _cityCtl.dispose();
     super.dispose();
+  }
+
+  Map<String, dynamic>? get _selectedCity {
+    for (final c in widget.state.cities) {
+      if (c['id'] == _cityId) return c;
+    }
+    return null;
+  }
+
+  List<Map<String, dynamic>> get _visibleCities {
+    final all = widget.state.cities;
+    final q = _cityCtl.text.trim().toLowerCase();
+    final selected = _selectedCity?['name']?.toString().toLowerCase();
+    if (q.isEmpty || q == selected) return all;
+    return all
+        .where((c) =>
+            c['name'].toString().toLowerCase().contains(q) ||
+            c['state'].toString().toLowerCase().contains(q))
+        .toList();
+  }
+
+  void _openCityPicker() {
+    FocusScope.of(context).unfocus();
+    setState(() => _pickCity = true);
+  }
+
+  void _pick(Map<String, dynamic> c) {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _cityId = c['id'] as int;
+      _cityCtl.text = c['name'].toString();
+      _cityCtl.selection = TextSelection.collapsed(offset: _cityCtl.text.length);
+      _pickCity = false;
+    });
   }
 
   Future<void> _sendOtp() async {
@@ -121,7 +171,13 @@ class _SignupScreenState extends State<SignupScreen> {
               decoration: InputDecoration(
                 isDense: true,
                 counterText: '',
+                filled: false,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
                 hintText: hint,
                 hintStyle: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF9AA69E)),
                 contentPadding: EdgeInsets.zero,
@@ -136,10 +192,6 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final cities = widget.state.cities;
-    Map<String, dynamic>? city;
-    for (final c in cities) {
-      if (c['id'] == _cityId) city = c;
-    }
 
     return Scaffold(
       body: DesignCanvas(
@@ -197,71 +249,42 @@ class _SignupScreenState extends State<SignupScreen> {
               r: 16,
               bg: Colors.white,
               border: Border.all(color: C.line),
-              onTap: () => setState(() => _pickCity = !_pickCity),
+              onTap: _openCityPicker,
             ),
             const DSvg('assets/ui/pin.svg', x: 38, y: 510, w: 18, h: 18),
-            DTxt(
-              city == null ? (cities.isEmpty ? 'Loading cities…' : 'Choose your city') : city['name'].toString(),
-              x: 67,
-              y: 510,
-              w: 300,
-              s: 16,
-              wt: FontWeight.w600,
-              lh: 22,
-              c: city == null ? const Color(0xFF9AA69E) : C.ink,
-              onTap: () => setState(() => _pickCity = !_pickCity),
-            ),
-            const DSvg('assets/ui/down.svg', x: 358, y: 509, w: 19, h: 19),
-            if (_pickCity)
-              Positioned(
-                left: 20,
-                top: 551,
-                width: 372,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: C.line),
-                    boxShadow: sh(16, 30, .14),
-                  ),
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < cities.length; i++)
-                        InkWell(
-                          onTap: () => setState(() {
-                            _cityId = cities[i]['id'] as int;
-                            _pickCity = false;
-                          }),
-                          child: Container(
-                            height: 50,
-                            padding: const EdgeInsets.symmetric(horizontal: 18),
-                            decoration: BoxDecoration(
-                              color: cities[i]['id'] == _cityId ? const Color(0xFFEEF5DB) : Colors.white,
-                              border: i == 0 ? null : const Border(top: BorderSide(color: C.tint5)),
-                            ),
-                            alignment: Alignment.centerLeft,
-                            child: Text.rich(
-                              TextSpan(children: [
-                                TextSpan(text: cities[i]['name'].toString()),
-                                TextSpan(
-                                  text: '  · ${cities[i]['state']}',
-                                  style: const TextStyle(color: C.muted, fontWeight: FontWeight.w400, fontSize: 13),
-                                ),
-                              ]),
-                              style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w600, color: C.ink),
-                            ),
-                          ),
-                        ),
-                      if (cities.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text("Couldn't load cities. Check your connection.",
-                              style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: C.muted)),
-                        ),
-                    ],
-                  ),
+            Positioned(
+              left: 67,
+              top: 510,
+              width: 280,
+              height: 24,
+              child: TextField(
+                controller: _cityCtl,
+                onTap: () => setState(() => _pickCity = true),
+                onChanged: (_) => setState(() {
+                  _pickCity = true;
+                  if (_cityCtl.text.trim() != (_selectedCity?['name']?.toString() ?? '')) _cityId = null;
+                }),
+                cursorColor: C.green,
+                style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: C.ink),
+                decoration: InputDecoration(
+                  isDense: true,
+                  isCollapsed: true,
+                  filled: false,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  hintText: widget.state.citiesLoading && cities.isEmpty
+                      ? 'Loading cities�?�'
+                      : 'Type or choose your city',
+                  hintStyle: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF9AA69E)),
+                  contentPadding: EdgeInsets.zero,
                 ),
               ),
+            ),
+            const DSvg('assets/ui/down.svg', x: 358, y: 509, w: 19, h: 19),
 
             const DTxt('How will you deliver?', x: 20, y: 562, w: 372, wt: FontWeight.w600, lh: 18.2),
             for (final v in vehicles)
@@ -346,9 +369,138 @@ class _SignupScreenState extends State<SignupScreen> {
                 MaterialPageRoute(builder: (_) => LoginScreen(state: widget.state)),
               ),
             ),
+            if (_pickCity) _cityPanel(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _cityPanel() {
+    final st = widget.state;
+    final visible = _visibleCities;
+    final q = _cityCtl.text.trim();
+    final items = <Widget>[
+      for (var i = 0; i < visible.length; i++)
+        InkWell(
+          onTap: () => _pick(visible[i]),
+          child: Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            decoration: BoxDecoration(
+              color: visible[i]['id'] == _cityId ? const Color(0xFFEEF5DB) : Colors.white,
+              border: i == 0 ? null : const Border(top: BorderSide(color: C.tint5)),
+            ),
+            alignment: Alignment.centerLeft,
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: visible[i]['name'].toString()),
+                TextSpan(
+                  text: '  · ${visible[i]['state']}',
+                  style: const TextStyle(color: C.muted, fontWeight: FontWeight.w400, fontSize: 13),
+                ),
+              ]),
+              style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w600, color: C.ink),
+            ),
+          ),
+        ),
+      if (st.citiesLoading && st.cities.isEmpty)
+        const Padding(
+          padding: EdgeInsets.all(16),
+          child: Text('Loading cities…',
+              style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: C.muted)),
+        ),
+      if (!st.citiesLoading && visible.isEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                st.citiesFailed
+                    ? "Couldn't load cities. Check your connection."
+                    : q.isEmpty
+                        ? 'No cities available yet.'
+                        : 'No city matches "$q".',
+                style: const TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: C.muted),
+              ),
+              if (st.citiesFailed || q.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => st.citiesFailed
+                      ? st.loadCities()
+                      : setState(() {
+                          _cityCtl.clear();
+                          _cityId = null;
+                        }),
+                  child: Text(
+                    st.citiesFailed ? 'Retry' : 'Clear search',
+                    style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: C.green,
+                        decoration: TextDecoration.underline),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+    ];
+
+    final mq = MediaQuery.of(context);
+    final s = math.min(mq.size.width / kDesignW, mq.size.height / (kDesignH - kBottomSlack));
+    final keyboard = mq.viewInsets.bottom / s;
+    final spaceBelow = (kDesignH - keyboard) - 555;
+    final openBelow = spaceBelow >= 160;
+
+    final panel = Positioned(
+      left: 20,
+      width: 372,
+      top: openBelow ? 551 : null,
+      bottom: openBelow ? null : kDesignH - 487,
+      child: Container(
+        constraints: BoxConstraints(maxHeight: openBelow ? math.max(120.0, math.min(250.0, spaceBelow)) : 250),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: C.line),
+          boxShadow: sh(16, 30, .14),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: SingleChildScrollView(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: items),
+        ),
+      ),
+    );
+
+    return Stack(
+      children: [
+        Positioned(
+          left: 0,
+          top: 0,
+          width: kDesignW,
+          height: 492,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _pickCity = false),
+            child: const ColoredBox(color: Colors.transparent),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          top: 547,
+          width: kDesignW,
+          height: kDesignH - 547,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _pickCity = false),
+            child: const ColoredBox(color: Colors.transparent),
+          ),
+        ),
+        panel,
+      ],
     );
   }
 }

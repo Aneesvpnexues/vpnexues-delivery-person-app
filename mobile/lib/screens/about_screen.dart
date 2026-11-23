@@ -108,8 +108,8 @@ class _AboutScreenState extends State<AboutScreen> {
               ),
             ),
           ),
-          RoundBtn(icon: LucideIcons.arrowLeft, y: 52, onTap: () => Navigator.of(context).maybePop()),
-          const DTxt('About', x: 80, y: 51, s: 20, wt: FontWeight.w700, lh: 28),
+          RoundBtn(icon: LucideIcons.arrowLeft, x: 20, y: 52, onTap: () => Navigator.of(context).maybePop()),
+          const DTxt('About', x: 80, y: 51, s: 20, wt: FontWeight.w700, lh: 28, w: 246),
           const Logo(x: 168, y: 93, s: 76),
           const DTxt('VP NEXUES', x: 20, y: 176, w: 372, s: 24, wt: FontWeight.w700, lh: 34, c: Color(0xFF0F5132), align: TextAlign.center),
           const Positioned(
@@ -117,11 +117,13 @@ class _AboutScreenState extends State<AboutScreen> {
             top: 233,
             width: 392,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text('From the farm to the doorstep,',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontFamily: 'Inter', fontSize: 22, fontWeight: FontWeight.w700, color: C.ink, height: 30 / 22)),
                 GradientText('the same day.',
+                    align: TextAlign.center,
                     style: TextStyle(fontFamily: 'Inter', fontSize: 22, fontWeight: FontWeight.w700, height: 30 / 22)),
               ],
             ),
@@ -139,11 +141,10 @@ class _AboutScreenState extends State<AboutScreen> {
               height: 70,
               child: Row(
                 children: [
-                  Container(
+                  SizedBox(
                     width: 44,
                     height: 44,
-                    decoration: BoxDecoration(color: _values[i].$2, borderRadius: BorderRadius.circular(13)),
-                    child: Icon(_values[i].$1, size: 19, color: _values[i].$3),
+                    child: Center(child: Icon(_values[i].$1, size: 21, color: _values[i].$3)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -155,6 +156,8 @@ class _AboutScreenState extends State<AboutScreen> {
                             style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: C.ink)),
                         const SizedBox(height: 2),
                         Text(_values[i].$5,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: C.muted)),
                       ],
                     ),

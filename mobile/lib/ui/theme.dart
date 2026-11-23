@@ -31,22 +31,17 @@ ThemeData buildTheme() {
       bodyMedium: TextStyle(fontFamily: 'Inter', color: C.ink),
       bodyLarge: TextStyle(fontFamily: 'Inter', color: C.ink),
     ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: C.line),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: C.line),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: C.green, width: 1.5),
-      ),
+    inputDecorationTheme: const InputDecorationTheme(
+      filled: false,
+      fillColor: Colors.transparent,
+      isDense: true,
+      contentPadding: EdgeInsets.zero,
+      border: InputBorder.none,
+      enabledBorder: InputBorder.none,
+      focusedBorder: InputBorder.none,
+      disabledBorder: InputBorder.none,
+      errorBorder: InputBorder.none,
+      focusedErrorBorder: InputBorder.none,
     ),
     dividerColor: C.line,
     snackBarTheme: SnackBarThemeData(

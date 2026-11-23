@@ -19,6 +19,8 @@ class AppState extends ChangeNotifier {
   Map<String, dynamic>? partner;
   Map<String, dynamic> settings = {};
   List<Map<String, dynamic>> cities = [];
+  bool citiesLoading = false;
+  bool citiesFailed = false;
   int unread = 0;
 
   bool get loggedIn => partner != null;
@@ -42,10 +44,19 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> loadCities() async {
+    if (citiesLoading) return;
+    citiesLoading = true;
+    citiesFailed = false;
+    notifyListeners();
     try {
       cities = mapList(await api.get('/v1/cities'));
+      citiesFailed = cities.isEmpty;
+    } catch (_) {
+      citiesFailed = true;
+    } finally {
+      citiesLoading = false;
       notifyListeners();
-    } catch (_) {}
+    }
   }
 
   Future<void> loadMe() async {

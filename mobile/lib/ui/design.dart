@@ -286,17 +286,15 @@ class DIcon extends StatelessWidget {
 }
 
 class Logo extends StatelessWidget {
-  const Logo({super.key, required this.x, required this.y, required this.s});
+  const Logo({super.key, this.x, this.y, required this.s});
 
-  final double x;
-  final double y;
+  final double? x;
+  final double? y;
   final double s;
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: x,
-      top: y,
+    final body = SizedBox(
       width: s,
       height: s,
       child: ClipOval(
@@ -314,6 +312,8 @@ class Logo extends StatelessWidget {
         ),
       ),
     );
+    if (x == null || y == null) return body;
+    return Positioned(left: x, top: y, width: s, height: s, child: body);
   }
 }
 
@@ -483,11 +483,10 @@ class Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final body = Container(
+    final body = SizedBox(
       width: s,
       height: s,
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(r)),
-      child: Icon(icon, size: isize, color: c ?? C.green),
+      child: Center(child: Icon(icon, size: isize, color: c ?? C.green)),
     );
     if (x == null) return body;
     return Positioned(left: x, top: y ?? 0, child: body);
@@ -738,7 +737,13 @@ class Field extends StatelessWidget {
                   style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: C.ink),
                   decoration: InputDecoration(
                     isDense: true,
+                    filled: false,
                     border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
                     hintText: placeholder,
                     hintStyle: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF9AA69E)),
                     contentPadding: EdgeInsets.zero,
@@ -899,18 +904,25 @@ void showToast(BuildContext context, String message) {
 }
 
 class GradientText extends StatelessWidget {
-  const GradientText(this.text, {super.key, required this.style, this.gradient = kGrad});
+  const GradientText(
+    this.text, {
+    super.key,
+    required this.style,
+    this.gradient = kGrad,
+    this.align = TextAlign.start,
+  });
 
   final String text;
   final TextStyle style;
   final Gradient gradient;
+  final TextAlign align;
 
   @override
   Widget build(BuildContext context) {
     return ShaderMask(
       blendMode: BlendMode.srcIn,
       shaderCallback: (bounds) => gradient.createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-      child: Text(text, style: style),
+      child: Text(text, textAlign: align, style: style),
     );
   }
 }
