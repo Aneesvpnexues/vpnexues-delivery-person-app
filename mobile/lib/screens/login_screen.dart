@@ -99,16 +99,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            const Logo(x: 20, y: 110, s: 56),
-            const DTxt('VP NEXUES PARTNER', x: 90, y: 122, w: 280, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.accent, ls: .9),
-            const DTxt('Delivery partner app', x: 90, y: 137, w: 280, s: 12, wt: FontWeight.w500, lh: 16.8, c: C.muted),
-            const DTxt('Welcome back.', x: 20, y: 181, w: 372, s: 29, wt: FontWeight.w700, lh: 40.6),
-            const DTxt("Log in to see today's deliveries and payouts.", x: 20, y: 224, w: 380, s: 15, wt: FontWeight.w500, lh: 21, c: C.muted),
+            const Logo(x: 20, y: 102, s: 56),
+            const DTxt('VP NEXUES PARTNER', x: 90, y: 114, w: 280, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.accent, ls: .9),
+            const DTxt('Delivery partner app', x: 90, y: 129, w: 280, s: 12, wt: FontWeight.w500, lh: 16.8, c: C.muted),
+            const DTxt('Welcome back.', x: 20, y: 170, w: 372, s: 29, wt: FontWeight.w700, lh: 40.6),
+            const DTxt("Log in to see today's deliveries and payouts.", x: 20, y: 211, w: 380, s: 15, wt: FontWeight.w500, lh: 21, c: C.muted),
 
             // segmented control
             DBox(
               x: 20,
-              y: 270,
+              y: 252,
               w: 372,
               h: 56,
               r: 28,
@@ -118,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
             AnimatedPositioned(
               duration: const Duration(milliseconds: 200),
               left: _tab == 'password' ? 24 : 206,
-              top: 274,
+              top: 256,
               width: 182,
               height: 48,
               child: Container(
@@ -127,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             Positioned(
               left: 24,
-              top: 274,
+              top: 256,
               width: 182,
               height: 48,
               child: GestureDetector(
@@ -142,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             Positioned(
               left: 206,
-              top: 274,
+              top: 256,
               width: 182,
               height: 48,
               child: GestureDetector(
@@ -156,21 +156,21 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-            const DTxt('Mobile number', x: 20, y: 347, w: 372, wt: FontWeight.w600, lh: 18.2),
+            const DTxt('Mobile number', x: 20, y: 324, w: 372, wt: FontWeight.w600, lh: 18.2),
             DBox(
               x: 20,
-              y: 373,
+              y: 348,
               w: 372,
               h: 55,
               r: 16,
               bg: Colors.white,
               border: Border.all(color: C.line),
             ),
-            const DTxt('+91', x: 37, y: 390, w: 38, s: 16, wt: FontWeight.w600, lh: 22.4),
-            const DBox(x: 74.5, y: 390, w: 1, h: 21, bg: C.line),
+            const DTxt('+91', x: 37, y: 365, w: 38, s: 16, wt: FontWeight.w600, lh: 22.4),
+            const DBox(x: 74.5, y: 365, w: 1, h: 21, bg: C.line),
             Positioned(
               left: 87,
-              top: 373,
+              top: 348,
               width: 280,
               height: 55,
               child: Align(
@@ -201,11 +201,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
 
             if (_tab == 'password') ...[
-              const DTxt('Password', x: 20, y: 445, w: 372, wt: FontWeight.w600, lh: 18.2),
+              const DTxt('Password', x: 20, y: 417, w: 372, wt: FontWeight.w600, lh: 18.2),
               DTxt(
                 'Forgot password?',
                 x: 252,
-                y: 445,
+                y: 417,
                 w: 140,
                 wt: FontWeight.w700,
                 lh: 18.2,
@@ -217,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               DBox(
                 x: 20,
-                y: 471,
+                y: 441,
                 w: 372,
                 h: 55,
                 r: 16,
@@ -225,10 +225,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 border: Border.all(color: C.green, width: 1.5),
                 shadow: [BoxShadow(color: C.green.withValues(alpha: .08), blurRadius: 0, spreadRadius: 4)],
               ),
-              const DSvg('assets/ui/lock.svg', x: 38, y: 489, w: 18, h: 18),
+              const DSvg('assets/ui/lock.svg', x: 38, y: 459, w: 18, h: 18),
               Positioned(
                 left: 67,
-                top: 471,
+                top: 441,
                 width: 250,
                 height: 55,
                 child: Align(
@@ -258,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               DBox(
                 x: 334,
-                y: 478,
+                y: 448,
                 w: 40,
                 h: 40,
                 onTap: () => setState(() => _show = !_show),
@@ -273,7 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ] else
-              const DTxt("We'll text a 6-digit one-time code to this number.", x: 20, y: 445, w: 372, s: 13, wt: FontWeight.w500, lh: 19.5, c: C.muted),
+              const DTxt("We'll text a 6-digit one-time code to this number.", x: 20, y: 417, w: 372, s: 13, wt: FontWeight.w500, lh: 19.5, c: C.muted),
 
             DBox(
               x: 20,
