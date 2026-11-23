@@ -321,7 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => SignupScreen(state: widget.state)),
               ),
-            ),            ),
+            ),
           ],
         ),
       ),
