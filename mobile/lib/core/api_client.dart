@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,10 +23,16 @@ class ApiClient {
     refreshToken = _prefs.getString(_kRefresh);
   }
 
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8080',
-  );
+  /// Point the app at another host with `--dart-define=API_BASE_URL=http://192.168.1.7:8080`.
+  /// Defaults: `10.0.2.2` (Android emulator → host machine), `localhost` (web/desktop).
+  static const String _baseUrlOverride = String.fromEnvironment('API_BASE_URL');
+
+  static String get baseUrl {
+    if (_baseUrlOverride.isNotEmpty) return _baseUrlOverride;
+    if (kIsWeb) return 'http://localhost:8080';
+    if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:8080';
+    return 'http://localhost:8080';
+  }
 
   static const _kAccess = 'vpnexues.accessToken';
   static const _kRefresh = 'vpnexues.refreshToken';

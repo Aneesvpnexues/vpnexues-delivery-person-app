@@ -142,8 +142,16 @@ class _SupportScreenState extends State<SupportScreen> {
                     controller: _search,
                     style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w600, color: C.ink),
                     decoration: const InputDecoration(
+                      filled: false,
                       border: InputBorder.none,
-                      hintText: 'Search: payout, OTP, insurance…',
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      hintText: 'Search: payout, OTP, insurance�?�',
                       hintStyle: TextStyle(color: C.muted, fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -180,17 +188,15 @@ class _SupportScreenState extends State<SupportScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
+                      SizedBox(
                         width: 44,
                         height: 44,
-                        decoration: BoxDecoration(
-                          color: i == 2 ? const Color(0xFFFDE0DD) : const Color(0xFFEEF5DB),
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                        child: Icon(
-                          [LucideIcons.messageCircle, LucideIcons.phone, LucideIcons.alertTriangle][i],
-                          size: 19,
-                          color: i == 2 ? const Color(0xFFC92526) : C.green,
+                        child: Center(
+                          child: Icon(
+                            [LucideIcons.messageCircle, LucideIcons.phone, LucideIcons.alertTriangle][i],
+                            size: 19,
+                            color: i == 2 ? const Color(0xFFC92526) : C.green,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 9),
@@ -293,11 +299,10 @@ class _SupportScreenState extends State<SupportScreen> {
           children: [
             Row(
               children: [
-                Container(
+                SizedBox(
                   width: 40,
                   height: 40,
-                  decoration: BoxDecoration(color: const Color(0xFFEEF5DB), borderRadius: BorderRadius.circular(12)),
-                  child: Icon(f.$1, size: 18, color: C.green),
+                  child: Center(child: Icon(f.$1, size: 18, color: C.green)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -491,9 +496,16 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                 textAlignVertical: TextAlignVertical.top,
                 style: const TextStyle(fontFamily: 'Inter', fontSize: 13, color: C.ink, height: 19 / 13),
                 decoration: const InputDecoration(
+                  filled: false,
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
                   isCollapsed: true,
-                  hintText: 'Type your message…',
+                  contentPadding: EdgeInsets.zero,
+                  hintText: 'Type your message.',
                   hintStyle: TextStyle(color: C.muted, fontSize: 13),
                 ),
                 onSubmitted: (_) => _send(),

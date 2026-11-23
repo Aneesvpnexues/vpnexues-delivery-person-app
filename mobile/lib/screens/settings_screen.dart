@@ -138,11 +138,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: onTap,
         child: Row(
           children: [
-            Container(
+            SizedBox(
               width: 32,
               height: 32,
-              decoration: BoxDecoration(color: const Color(0xFFEEF5DB), borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, size: 16, color: C.green),
+              child: Center(child: Icon(icon, size: 16, color: C.green)),
             ),
             const SizedBox(width: 12),
             Expanded(

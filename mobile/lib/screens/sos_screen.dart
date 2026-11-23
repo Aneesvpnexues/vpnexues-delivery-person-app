@@ -265,17 +265,15 @@ class _SosScreenState extends State<SosScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Container(
+                      SizedBox(
                         width: 44,
                         height: 44,
-                        decoration: BoxDecoration(
-                          color: [const Color(0xFFFDE0DD), const Color(0xFFEEF5DB), const Color(0xFFE0EFF3)][i],
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                        child: Icon(
-                          [LucideIcons.phone, LucideIcons.shield, LucideIcons.navigation][i],
-                          size: 19,
-                          color: [const Color(0xFFC92526), C.green, const Color(0xFF145B73)][i],
+                        child: Center(
+                          child: Icon(
+                            [LucideIcons.phone, LucideIcons.shield, LucideIcons.navigation][i],
+                            size: 19,
+                            color: [const Color(0xFFC92526), C.green, const Color(0xFF145B73)][i],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 4),

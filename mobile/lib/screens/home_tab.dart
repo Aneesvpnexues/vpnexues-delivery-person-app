@@ -118,52 +118,162 @@ class _HomeTabState extends State<HomeTab> {
       child: Stack(
         children: [
           const Backdrop(),
-          const Logo(x: 20, y: 51, s: 44),
-          DTxt(_today, x: 76, y: 41, w: 175, s: 12, wt: FontWeight.w700, lh: 16.8, c: C.muted),
-          DTxt('$_greeting,\n${firstName(state.name)}', x: 76, y: 59, w: 170, s: 18, wt: FontWeight.w700, lh: 22.5),
-
-          DBox(
-            x: 251,
-            y: 49,
-            w: 81,
-            h: 48,
-            r: 24,
-            bg: C.danger,
-            shadow: sh(10, 20, .2),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SosScreen(state: state))),
-            child: Stack(
-              children: const [
-                Positioned(left: 15, top: 15, child: Icon(LucideIcons.alertTriangle, size: 16, color: Colors.white)),
-                Positioned(left: 37, top: 15, child: Text('SOS', style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white))),
+          Positioned(
+            left: 20,
+            top: 40,
+            width: 372,
+            height: 66,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Logo(s: 44),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _today,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            height: 16.8 / 12,
+                            color: C.muted),
+                      ),
+                      Text(
+                        '$_greeting,\n${firstName(state.name)}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            height: 22.5 / 18,
+                            color: C.ink),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SosScreen(state: state))),
+                  child: Container(
+                    width: 81,
+                    height: 48,
+                    decoration: BoxDecoration(color: C.danger, borderRadius: BorderRadius.circular(24), boxShadow: sh(10, 20, .2)),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.alertTriangle, size: 16, color: Colors.white),
+                        SizedBox(width: 6),
+                        Text('SOS',
+                            style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () async {
+                    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => NotificationsScreen(state: state)));
+                    state.refreshUnread();
+                  },
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: sh(4, 12, .05)),
+                    child: Stack(
+                      children: [
+                        const Positioned(left: 14, top: 14, child: Icon(LucideIcons.bell, size: 20, color: C.green)),
+                        if (state.unread > 0)
+                          const Positioned(
+                            left: 29,
+                            top: 21,
+                            child: SizedBox(
+                              width: 5,
+                              height: 5,
+                              child: DecoratedBox(decoration: BoxDecoration(color: Color(0xFFE5484D), shape: BoxShape.circle)),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
-          ),
-          RoundBtn(
-            icon: LucideIcons.bell,
-            dot: state.unread > 0,
-            onTap: () async {
-              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => NotificationsScreen(state: state)));
-              state.refreshUnread();
-            },
           ),
 
           // online bar
           const DBox(x: 20, y: 121, w: 372, h: 50, r: 25, bg: Colors.white),
-          DBox(x: 31, y: 135, w: 23, h: 23, r: 12, bg: online ? const Color(0xFFD9F0DF) : const Color(0xFFE6E9E4)),
-          DBox(x: 37, y: 141, w: 11, h: 11, r: 6, bg: online ? const Color(0xFF2FB463) : const Color(0xFF9AA69E)),
-          DTxt(online ? 'Online' : 'Offline', x: 59, y: 137, s: 14, wt: FontWeight.w700, lh: 19.6),
-          DTxt(
-            '· ${asString(hub['name'], 'No hub').replaceAll(RegExp(r' Hub$'), '')} · ${asInt(partner['deliveryRadiusKm'], 5)} km · Change',
-            x: online ? 107 : 111,
-            y: 137,
-            w: 218,
-            s: 12,
-            wt: FontWeight.w500,
-            lh: 19.6,
-            c: C.muted,
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ZoneScreen(state: state))),
+          Positioned(
+            left: 20,
+            top: 121,
+            width: 372,
+            height: 50,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(width: 11),
+                Container(
+                  width: 23,
+                  height: 23,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: online ? const Color(0xFFD9F0DF) : const Color(0xFFE6E9E4),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Container(
+                    width: 11,
+                    height: 11,
+                    decoration: BoxDecoration(
+                      color: online ? const Color(0xFF2FB463) : const Color(0xFF9AA69E),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  online ? 'Online' : 'Offline',
+                  style: const TextStyle(
+                      fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, height: 19.6 / 14, color: C.ink),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ZoneScreen(state: state))),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '· ${asString(hub['name'], 'No hub').replaceAll(RegExp(r' Hub$'), '')} · ${asInt(partner['deliveryRadiusKm'], 5)} km',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w500, height: 19.6 / 12, color: C.muted),
+                          ),
+                        ),
+                        Text(
+                          ' · Change',
+                          maxLines: 1,
+                          style: const TextStyle(
+                              fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w500, height: 19.6 / 12, color: C.muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ToggleSwitch(on: online, onChanged: _toggleOnline),
+                const SizedBox(width: 10),
+              ],
+            ),
           ),
-          ToggleSwitch(x: 332, y: 131, on: online, onChanged: _toggleOnline),
 
           // hero card
           DBox(
@@ -297,14 +407,12 @@ class _HomeTabState extends State<HomeTab> {
               c: const Color(0xFFCFE3D0),
               align: TextAlign.center,
             ),
-            DBox(
-              x: 136,
-              y: 340,
-              w: 140,
-              h: 140,
-              r: 70,
-              bg: const Color(0x14FFFFFF),
-              child: const Icon(LucideIcons.packagePlus, size: 50, color: Color(0xFFDFEE91)),
+            Positioned(
+              left: 136,
+              top: 340,
+              width: 140,
+              height: 140,
+              child: const Center(child: Icon(LucideIcons.packagePlus, size: 50, color: Color(0xFFDFEE91))),
             ),
             if (!_loading)
               Positioned(
@@ -365,15 +473,16 @@ class _HomeTabState extends State<HomeTab> {
           const DBox(x: 20, y: 724, w: 372, h: 70, r: 22, bg: Color(0xFFEEF5DB)),
           DTxt('Today: ${money(net)} earned', x: 37, y: 739, s: 14, wt: FontWeight.w700, lh: 22.4),
           DTxt('Available to withdraw: ${money(available)}', x: 37, y: 761, w: 280, s: 11, lh: 18.2, c: C.muted),
-          DBox(
-            x: 330,
-            y: 739,
-            w: 40,
-            h: 40,
-            r: 14,
-            bg: const Color(0xFFF7EBC0),
-            onTap: () => widget.onOpenTab(2),
-            child: const Icon(LucideIcons.star, size: 20, color: C.green),
+          Positioned(
+            left: 330,
+            top: 739,
+            width: 40,
+            height: 40,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => widget.onOpenTab(2),
+              child: const Center(child: Icon(LucideIcons.star, size: 20, color: C.green)),
+            ),
           ),
 
           BottomNav(active: 'home', onTap: (k) => widget.onOpenTab({'home': 0, 'orders': 1, 'earnings': 2, 'profile': 3}[k] ?? 0)),
