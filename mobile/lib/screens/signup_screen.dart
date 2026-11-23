@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -30,10 +30,10 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _busy = false;
 
   static const vehicles = [
-    ('Motorbike', 'motorbike', 20.0, 89.0),
-    ('Scooter', 'scooter', 116.8, 70.3),
-    ('Electric scooter', 'electric_scooter', 194.9, 119.3),
-    ('Bicycle', 'bicycle', 326.1, 65.9),
+    ('Motorbike', 'motorbike', 20.0, 88.0),
+    ('Scooter', 'scooter', 115.0, 70.0),
+    ('Electric scooter', 'electric_scooter', 192.0, 116.0),
+    ('Bicycle', 'bicycle', 315.0, 77.0),
   ];
 
   static const _kDefaultCities = [
@@ -362,37 +362,40 @@ class _SignupScreenState extends State<SignupScreen> {
             const DSvg('assets/ui/pin.svg', x: 38, y: 510, w: 18, h: 18),
             Positioned(
               left: 67,
-              top: 510,
+              top: 492,
               width: 280,
-              height: 24,
-              child: TextField(
-                controller: _cityCtl,
-                onTap: () => setState(() => _pickCity = true),
-                onChanged: (_) => setState(() {
-                  _pickCity = true;
-                  if (_cityCtl.text.trim() != (_selectedCity?['name']?.toString() ?? '')) _cityId = null;
-                }),
-                cursorColor: C.green,
-                style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: C.ink),
-                decoration: InputDecoration(
-                  isDense: true,
-                  isCollapsed: true,
-                  filled: false,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  disabledBorder: InputBorder.none,
-                  errorBorder: InputBorder.none,
-                  focusedErrorBorder: InputBorder.none,
-                  hintText: widget.state.citiesLoading && cities.isEmpty
-                      ? 'Loading cities...'
-                      : 'Type city, state, or country',
-                  hintStyle: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF9AA69E)),
-                  contentPadding: EdgeInsets.zero,
+              height: 55,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextField(
+                  controller: _cityCtl,
+                  onTap: () => setState(() => _pickCity = true),
+                  onChanged: (_) => setState(() {
+                    _pickCity = true;
+                    if (_cityCtl.text.trim() != (_selectedCity?['name']?.toString() ?? '')) _cityId = null;
+                  }),
+                  cursorColor: C.green,
+                  style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: C.ink),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    isCollapsed: true,
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    hintText: widget.state.citiesLoading && cities.isEmpty
+                        ? 'Loading cities...'
+                        : 'Type city, state, or country',
+                    hintStyle: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF9AA69E)),
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
               ),
             ),
-            const DSvg('assets/ui/down.svg', x: 358, y: 509, w: 19, h: 19),
+            const DSvg('assets/ui/down.svg', x: 358, y: 510, w: 19, h: 19),
 
             const DTxt('How will you deliver?', x: 20, y: 562, w: 372, wt: FontWeight.w600, lh: 18.2),
             for (final v in vehicles)
