@@ -36,6 +36,52 @@ class _SignupScreenState extends State<SignupScreen> {
     ('Bicycle', 'bicycle', 326.1, 65.9),
   ];
 
+  static const _kDefaultCities = [
+    {'id': -1, 'name': 'Visakhapatnam', 'state': 'Andhra Pradesh'},
+    {'id': -2, 'name': 'Vijayawada', 'state': 'Andhra Pradesh'},
+    {'id': -3, 'name': 'Itanagar', 'state': 'Arunachal Pradesh'},
+    {'id': -4, 'name': 'Guwahati', 'state': 'Assam'},
+    {'id': -5, 'name': 'Patna', 'state': 'Bihar'},
+    {'id': -6, 'name': 'Chandigarh', 'state': 'Chandigarh'},
+    {'id': -7, 'name': 'Raipur', 'state': 'Chhattisgarh'},
+    {'id': -8, 'name': 'New Delhi', 'state': 'Delhi'},
+    {'id': -9, 'name': 'Panaji', 'state': 'Goa'},
+    {'id': -10, 'name': 'Ahmedabad', 'state': 'Gujarat'},
+    {'id': -11, 'name': 'Surat', 'state': 'Gujarat'},
+    {'id': -12, 'name': 'Gurugram', 'state': 'Haryana'},
+    {'id': -13, 'name': 'Shimla', 'state': 'Himachal Pradesh'},
+    {'id': -14, 'name': 'Ranchi', 'state': 'Jharkhand'},
+    {'id': -15, 'name': 'Bengaluru', 'state': 'Karnataka'},
+    {'id': -16, 'name': 'Mysuru', 'state': 'Karnataka'},
+    {'id': -17, 'name': 'Thiruvananthapuram', 'state': 'Kerala'},
+    {'id': -18, 'name': 'Kochi', 'state': 'Kerala'},
+    {'id': -19, 'name': 'Bhopal', 'state': 'Madhya Pradesh'},
+    {'id': -20, 'name': 'Indore', 'state': 'Madhya Pradesh'},
+    {'id': -21, 'name': 'Mumbai', 'state': 'Maharashtra'},
+    {'id': -22, 'name': 'Pune', 'state': 'Maharashtra'},
+    {'id': -23, 'name': 'Imphal', 'state': 'Manipur'},
+    {'id': -24, 'name': 'Shillong', 'state': 'Meghalaya'},
+    {'id': -25, 'name': 'Aizawl', 'state': 'Mizoram'},
+    {'id': -26, 'name': 'Kohima', 'state': 'Nagaland'},
+    {'id': -27, 'name': 'Bhubaneswar', 'state': 'Odisha'},
+    {'id': -28, 'name': 'Puducherry', 'state': 'Puducherry'},
+    {'id': -29, 'name': 'Amritsar', 'state': 'Punjab'},
+    {'id': -30, 'name': 'Jaipur', 'state': 'Rajasthan'},
+    {'id': -31, 'name': 'Gangtok', 'state': 'Sikkim'},
+    {'id': -32, 'name': 'Chennai', 'state': 'Tamil Nadu'},
+    {'id': -33, 'name': 'Coimbatore', 'state': 'Tamil Nadu'},
+    {'id': -34, 'name': 'Madurai', 'state': 'Tamil Nadu'},
+    {'id': -35, 'name': 'Hyderabad', 'state': 'Telangana'},
+    {'id': -36, 'name': 'Agartala', 'state': 'Tripura'},
+    {'id': -37, 'name': 'Lucknow', 'state': 'Uttar Pradesh'},
+    {'id': -38, 'name': 'Noida', 'state': 'Uttar Pradesh'},
+    {'id': -39, 'name': 'Dehradun', 'state': 'Uttarakhand'},
+    {'id': -40, 'name': 'Kolkata', 'state': 'West Bengal'},
+    {'id': -41, 'name': 'Srinagar', 'state': 'Jammu and Kashmir'},
+    {'id': -42, 'name': 'Jammu', 'state': 'Jammu and Kashmir'},
+    {'id': -43, 'name': 'Leh', 'state': 'Ladakh'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -58,22 +104,37 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Map<String, dynamic>? get _selectedCity {
-    for (final c in widget.state.cities) {
+    for (final c in _allCities) {
       if (c['id'] == _cityId) return c;
     }
     return null;
   }
 
+  List<Map<String, dynamic>> get _allCities {
+    final byKey = <String, Map<String, dynamic>>{};
+    for (final c in [...widget.state.cities, ..._kDefaultCities]) {
+      final name = c['name'].toString();
+      final state = c['state'].toString();
+      byKey['${name.toLowerCase()}|${state.toLowerCase()}'] = c;
+    }
+    final out = byKey.values.toList()
+      ..sort((a, b) {
+        final s = a['state'].toString().compareTo(b['state'].toString());
+        return s != 0 ? s : a['name'].toString().compareTo(b['name'].toString());
+      });
+    return out;
+  }
+
   List<Map<String, dynamic>> get _visibleCities {
-    final all = widget.state.cities;
+    final all = _allCities;
     final q = _cityCtl.text.trim().toLowerCase();
     final selected = _selectedCity?['name']?.toString().toLowerCase();
     if (q.isEmpty || q == selected) return all;
-    return all
-        .where((c) =>
-            c['name'].toString().toLowerCase().contains(q) ||
-            c['state'].toString().toLowerCase().contains(q))
-        .toList();
+    return all.where((c) {
+      final name = c['name'].toString().toLowerCase();
+      final state = c['state'].toString().toLowerCase();
+      return name.contains(q) || state.contains(q) || 'india'.contains(q);
+    }).toList();
   }
 
   void _openCityPicker() {
@@ -83,12 +144,24 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _pick(Map<String, dynamic> c) {
     FocusScope.of(context).unfocus();
+    final name = c['name'].toString().toLowerCase();
+    final state = c['state'].toString().toLowerCase();
+    Map<String, dynamic>? server;
+    for (final s in widget.state.cities) {
+      if (s['name'].toString().toLowerCase() == name && s['state'].toString().toLowerCase() == state) {
+        server = s;
+        break;
+      }
+    }
     setState(() {
-      _cityId = c['id'] as int;
+      _cityId = server != null ? server['id'] as int : (c['id'] as int) > 0 ? c['id'] as int : null;
       _cityCtl.text = c['name'].toString();
       _cityCtl.selection = TextSelection.collapsed(offset: _cityCtl.text.length);
       _pickCity = false;
     });
+    if (_cityId == null) {
+      showToast(context, '${c['name']} is not serviceable yet. Please choose a nearby active city.');
+    }
   }
 
   Future<void> _sendOtp() async {
@@ -277,8 +350,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   errorBorder: InputBorder.none,
                   focusedErrorBorder: InputBorder.none,
                   hintText: widget.state.citiesLoading && cities.isEmpty
-                      ? 'Loading cities�?�'
-                      : 'Type or choose your city',
+                      ? 'Loading cities...'
+                      : 'Type city, state, or country',
                   hintStyle: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF9AA69E)),
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -404,24 +477,22 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ),
         ),
-      if (st.citiesLoading && st.cities.isEmpty)
+      if (st.citiesLoading && visible.isEmpty)
         const Padding(
           padding: EdgeInsets.all(16),
-          child: Text('Loading cities…',
+          child: Text('Loading cities...',
               style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: C.muted)),
         ),
-      if (!st.citiesLoading && visible.isEmpty)
+      if (visible.isEmpty && !st.citiesLoading)
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                st.citiesFailed
+                st.citiesFailed && st.cities.isEmpty
                     ? "Couldn't load cities. Check your connection."
-                    : q.isEmpty
-                        ? 'No cities available yet.'
-                        : 'No city matches "$q".',
+                    : 'No city/state matches "$q".',
                 style: const TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: C.muted),
               ),
               if (st.citiesFailed || q.isNotEmpty) ...[
