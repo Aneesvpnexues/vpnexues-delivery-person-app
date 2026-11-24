@@ -22,7 +22,7 @@ class PartnerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'VP Nexues Partner',
+      title: 'VPNEXUES Partner',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       home: RootGate(state: state),

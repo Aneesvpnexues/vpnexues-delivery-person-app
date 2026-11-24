@@ -111,7 +111,7 @@ class _AboutScreenState extends State<AboutScreen> {
           RoundBtn(icon: LucideIcons.arrowLeft, x: 20, y: 52, onTap: () => Navigator.of(context).maybePop()),
           const DTxt('About', x: 80, y: 51, s: 20, wt: FontWeight.w700, lh: 28, w: 246),
           const Logo(x: 168, y: 93, s: 76),
-          const DTxt('VP NEXUES', x: 20, y: 176, w: 372, s: 24, wt: FontWeight.w700, lh: 34, c: Color(0xFF0F5132), align: TextAlign.center),
+          const DTxt('VPNEXUES', x: 20, y: 176, w: 372, s: 24, wt: FontWeight.w700, lh: 34, c: Color(0xFF0F5132), align: TextAlign.center),
           const Positioned(
             left: 10,
             top: 233,
@@ -128,7 +128,7 @@ class _AboutScreenState extends State<AboutScreen> {
               ],
             ),
           ),
-          const DTxt('VP Nexues connects local growers with homes and businesses. Our delivery partners are the last, most important mile.',
+          const DTxt('VPNEXUES connects local growers with homes and businesses. Our delivery partners are the last, most important mile.',
               x: 30, y: 300, w: 352, s: 13.5, lh: 20.5, c: C.muted, align: TextAlign.center),
 
           DBox(x: 20, y: 376, w: 372, h: 210, r: 24, bg: Colors.white, border: Border.all(color: C.line), shadow: sh(8, 20, .04)),
@@ -182,7 +182,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   const Text('Rate the partner app',
                       style: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w700, color: C.ink)),
                   const SizedBox(height: 6),
-                  const Text('How has delivering with VP Nexues been so far?',
+                  const Text('How has delivering with VPNEXUES been so far?',
                       style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: C.muted, height: 19 / 13)),
                   const SizedBox(height: 16),
                   Row(

@@ -1,6 +1,6 @@
 {
-    "name": "vpnexues_partner",
-    "short_name": "vpnexues_partner",
+    "name": "VPNEXUES Partner",
+    "short_name": "VPNEXUES",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

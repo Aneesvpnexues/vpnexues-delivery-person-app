@@ -41,19 +41,34 @@ class SplashScreen extends StatelessWidget {
             const DSvg('assets/leaf-deco.svg', x: 358, y: 90, w: 60, h: 90),
             const CornerLeaves(),
             const Logo(x: 48, y: 56, s: 68),
-            const DTxt('VP NEXUES', x: 134, y: 57.7, w: 240, s: 30, wt: FontWeight.w700, lh: 40.3, c: C.green),
             Positioned(
-              left: 136,
-              top: 102,
-              width: 132,
-              height: 20,
-              child: Container(
-                decoration: BoxDecoration(color: const Color(0xFFFFCD24), borderRadius: BorderRadius.circular(12)),
-                alignment: Alignment.center,
-                child: const Text(
-                  'Delivery partner app',
-                  style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF3A3E34)),
-                ),
+              left: 134,
+              top: 56,
+              width: 262,
+              height: 68,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'VPNEXUES',
+                        style: TextStyle(fontFamily: 'Inter', fontSize: 30, fontWeight: FontWeight.w700, height: 1.15, color: C.green),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                        decoration: BoxDecoration(color: const Color(0xFFFFCD24), borderRadius: BorderRadius.circular(12)),
+                        child: const Text(
+                          'Delivery partner app',
+                          style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, height: 1.2, color: Color(0xFF3A3E34)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             const DSvg('assets/illustration-scooter.svg', x: 105, y: 234, w: 200, h: 232),

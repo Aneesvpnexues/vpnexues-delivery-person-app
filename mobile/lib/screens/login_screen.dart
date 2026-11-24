@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const Logo(x: 20, y: 102, s: 56),
-            const DTxt('VP NEXUES PARTNER', x: 90, y: 114, w: 280, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.accent, ls: .9),
+            const DTxt('VPNEXUES PARTNER', x: 90, y: 114, w: 280, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.accent, ls: .9),
             const DTxt('Delivery partner app', x: 90, y: 129, w: 280, s: 12, wt: FontWeight.w500, lh: 16.8, c: C.muted),
             const DTxt('Welcome back.', x: 20, y: 164, w: 372, s: 29, wt: FontWeight.w700, lh: 40.6),
             const DTxt("Log in to see today's deliveries and payouts.", x: 20, y: 202, w: 380, s: 15, wt: FontWeight.w500, lh: 21, c: C.muted),
@@ -314,7 +314,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             const DBox(x: 20, y: 705, w: 122, h: 1, bg: C.tint5),
             const DBox(x: 270, y: 705, w: 122, h: 1, bg: C.tint5),
-            const DTxt('New to VP Nexues?', x: 144, y: 697, w: 125, s: 12, wt: FontWeight.w500, lh: 16.8, c: C.muted, align: TextAlign.center),
+            const DTxt('New to VPNEXUES?', x: 144, y: 697, w: 125, s: 12, wt: FontWeight.w500, lh: 16.8, c: C.muted, align: TextAlign.center),
             OutlineButton(
               y: 728,
               label: 'CREATE A PARTNER ACCOUNT',

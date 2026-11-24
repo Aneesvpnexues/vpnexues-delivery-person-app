@@ -265,7 +265,7 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
               _Row(
                 icon: LucideIcons.info,
-                title: 'About VP Nexues',
+                title: 'About VPNEXUES',
                 onTap: () => _push(AboutScreen(state: widget.state)),
               ),
               _Row(
