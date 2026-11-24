@@ -228,6 +228,7 @@ class _SignupScreenState extends State<SignupScreen> {
           : 'Choose a service city from suggestions');
       return;
     }
+    final selectedCityId = cityId;
     if (!_agree) {
       showToast(context, 'Please accept the partner terms to continue');
       return;
