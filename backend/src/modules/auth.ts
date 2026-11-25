@@ -6,7 +6,8 @@ import { one, query, tx, type Db } from '../db.js'
 import { sendSms } from '../aws/sms.js'
 import { AppError, parse } from '../lib/errors.js'
 import { numericCode, opaqueToken, sameHash, sha256 } from '../lib/crypto.js'
-import { partnerId } from '../lib/auth.js'
+import { partnerId, signPartnerAccessToken } from '../lib/auth.js'
+import { classifyRefreshSession } from '../lib/sessionSecurity.js'
 
 /** Indian mobile → E.164. Accepts "90000 00000", "+91 9000000000", "09000000000". */
 export const phoneSchema = z
@@ -83,7 +84,7 @@ async function issueTokens(app: FastifyInstance, req: FastifyRequest, db: Db, pi
     `INSERT INTO sessions (partner_id, refresh_token_hash, user_agent, ip, expires_at) VALUES ($1, $2, $3, $4, now() + make_interval(days => $5))`,
     [pid, sha256(refreshToken), req.headers['user-agent'] ?? null, req.ip, config.REFRESH_TOKEN_TTL_DAYS], db,
   )
-  const accessToken = app.jwt.sign({ sub: pid, typ: 'access' })
+  const accessToken = signPartnerAccessToken(app, pid)
   return { accessToken, refreshToken, tokenType: 'Bearer', expiresIn: config.ACCESS_TOKEN_TTL }
 }
 
@@ -180,7 +181,8 @@ export default async function authRoutes(app: FastifyInstance) {
   })
 
   /** Rotate the refresh token. Reusing an old token revokes every session (theft signal). */
-  app.post('/refresh', async (req) => {
+  const refreshLimit = { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }
+  app.post('/refresh', refreshLimit, async (req) => {
     const { refreshToken } = parse(z.object({ refreshToken: z.string().min(20) }), req.body)
     const out = await tx(async (db) => {
       const s = await one<{ id: string; partner_id: string; revoked: boolean; expired: boolean }>(
@@ -188,12 +190,19 @@ export default async function authRoutes(app: FastifyInstance) {
         [sha256(refreshToken)], db,
       )
       if (!s) throw new AppError(401, 'UNAUTHENTICATED', 'Sign in again to continue')
-      if (s.revoked) {
+      // The row lock above serialises concurrent rotations. Reuse detection stays strict:
+      // a revoked token is never accepted, even if it was replayed only milliseconds later.
+      const state = classifyRefreshSession({ revoked: s.revoked, expired: s.expired })
+      if (state === 'revoked') {
+        req.log.warn(
+          { event: 'refresh_token_reuse', partnerId: s.partner_id, requestId: req.id },
+          'Refresh token reuse detected; revoking all sessions for this partner',
+        )
         // Revoke every session, and let this COMMIT — throwing here would roll the revocation back.
         await query(`UPDATE sessions SET revoked_at = now() WHERE partner_id = $1 AND revoked_at IS NULL`, [s.partner_id], db)
         return null
       }
-      if (s.expired) throw new AppError(401, 'UNAUTHENTICATED', 'Session expired. Sign in again')
+      if (state === 'expired') throw new AppError(401, 'UNAUTHENTICATED', 'Session expired. Sign in again')
       await query(`UPDATE sessions SET revoked_at = now(), last_used_at = now() WHERE id = $1`, [s.id], db)
       return issueTokens(app, req, db, s.partner_id)
     })

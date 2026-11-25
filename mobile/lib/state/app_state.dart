@@ -16,6 +16,8 @@ class AppState extends ChangeNotifier {
   final ApiClient api;
 
   bool booting = true;
+  bool offline = false;
+  Future<void>? _resuming;
   Map<String, dynamic>? partner;
   Map<String, dynamic> settings = {};
   List<Map<String, dynamic>> cities = [];
@@ -28,19 +30,68 @@ class AppState extends ChangeNotifier {
   String get name => asString(partner?['fullName'], 'Partner');
   String get kycStatus => asString(partner?['kycStatus'], 'not_started');
 
+  static bool _invalidSession(ApiException e) =>
+      e.status == 401 ||
+      e.code == 'UNAUTHENTICATED' ||
+      e.code == 'INVALID_SESSION' ||
+      e.code == 'REVOKED';
+
+  void _clearSessionState() {
+    partner = null;
+    settings = {};
+    unread = 0;
+  }
+
   Future<void> boot() async {
     try {
+      await api.restore();
+      await api.flushPendingLogout();
       await loadCities();
       if (api.hasSession) {
+        await api.ensureFreshToken();
         await loadMe();
       }
+      offline = false;
+    } on ApiException catch (e) {
+      if (_invalidSession(e)) {
+        await api.expireSession();
+        _clearSessionState();
+      } else {
+        // Network/server errors must not destroy a valid stored session.
+        offline = true;
+      }
     } catch (_) {
-      await api.clear();
-      partner = null;
+      offline = true;
     } finally {
       booting = false;
       notifyListeners();
     }
+  }
+
+  /// Called when the app returns to the foreground. Shares the single-flight
+  /// refresh with boot so startup and resume cannot double-spend a token.
+  Future<void> resumeSession() {
+    if (booting || !api.hasSession) return Future.value();
+    return _resuming ??= _doResume().whenComplete(() => _resuming = null);
+  }
+
+  Future<void> _doResume() async {
+    try {
+      await api.flushPendingLogout();
+      await api.ensureFreshToken();
+      await loadMe();
+      offline = false;
+    } on ApiException catch (e) {
+      if (_invalidSession(e)) {
+        await api.expireSession();
+        _clearSessionState();
+      } else {
+        offline = true;
+      }
+    } catch (_) {
+      offline = true;
+    }
+    notifyListeners();
   }
 
   Future<void> loadCities() async {
@@ -160,16 +211,36 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    try {
-      if (api.refreshToken != null) {
-        await api.post('/v1/auth/logout',
-            body: {'refreshToken': api.refreshToken});
+    final token = api.refreshToken;
+    if (token != null) {
+      try {
+        await api.post(
+          '/v1/auth/logout',
+          body: {'refreshToken': token},
+          auth: false,
+          timeout: const Duration(seconds: 15),
+        );
+      } on ApiException catch (e) {
+        if (e.status == 0 || e.status >= 500) {
+          // Offline/server failure: keep a one-shot revocation token in secure
+          // storage and flush it on the next boot or resume.
+          await api.clear(retainForRevocation: true);
+          _clearSessionState();
+          offline = true;
+          notifyListeners();
+          return;
+        }
+        // 401/404 means the session is already invalid on the server.
+      } catch (_) {
+        await api.clear(retainForRevocation: true);
+        _clearSessionState();
+        offline = true;
+        notifyListeners();
+        return;
       }
-    } catch (_) {}
+    }
     await api.clear();
-    partner = null;
-    settings = {};
-    unread = 0;
+    _clearSessionState();
     notifyListeners();
   }
 }

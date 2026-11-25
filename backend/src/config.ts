@@ -20,7 +20,7 @@ const schema = z.object({
   HOST: z.string().default('0.0.0.0'),
   PORT: z.coerce.number().int().default(4000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-  CORS_ORIGINS: z.string().default('http://localhost:5199,http://localhost:5200,capacitor://localhost,https://localhost'),
+  CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:5199,http://localhost:5200,capacitor://localhost,https://localhost'),
 
   // PostgreSQL (Amazon RDS / Aurora). Optional so the API can boot before a DB exists.
   DATABASE_URL: z.string().url().optional(),

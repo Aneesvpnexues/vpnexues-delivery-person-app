@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/api_client.dart';
+import 'core/session_lifecycle.dart';
 import 'screens/root_gate.dart';
 import 'state/app_state.dart';
 import 'ui/theme.dart';
@@ -25,7 +26,7 @@ class PartnerApp extends StatelessWidget {
       title: 'VP Nexues Partner',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
-      home: RootGate(state: state),
+      home: SessionLifecycle(state: state, child: RootGate(state: state)),
     );
   }
 }
