@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
 
 import '../core/api_client.dart';
@@ -21,7 +19,8 @@ class AppState extends ChangeNotifier {
   final ApiClient api;
 
   bool booting = true;
-
+  bool offline = false;
+  Future<void>? _resuming;
   Map<String, dynamic>? partner;
   Map<String, dynamic> settings = {};
 
@@ -129,6 +128,22 @@ class AppState extends ChangeNotifier {
   }
 
   // --------------------------------------------------
+  // SESSION VALIDATION
+  // --------------------------------------------------
+
+  static bool _invalidSession(ApiException e) =>
+      e.status == 401 ||
+      e.code == 'UNAUTHENTICATED' ||
+      e.code == 'INVALID_SESSION' ||
+      e.code == 'REVOKED';
+
+  void _clearSessionState() {
+    partner = null;
+    settings = {};
+    unread = 0;
+  }
+
+  // --------------------------------------------------
   // APP INITIALIZATION
   // --------------------------------------------------
 
@@ -139,27 +154,64 @@ class AppState extends ChangeNotifier {
   Future<void> _runBoot() async {
     booting = true;
 
-    // Cities must never block authentication.
-    unawaited(loadCities());
-
     try {
-      // Temporary dev mode: no server calls during splash → home screen.
-      // A stored session counts as logged in without calling /v1/me.
-      partner = api.hasSession
-          ? {
-              'fullName': 'Partner',
-              'isOnline': true,
-            }
-          : null;
+      // Restore credentials from platform-backed secure storage, flush any
+      // logout that could not reach the server, then validate the session.
+      await api.restore();
+      await api.flushPendingLogout();
+      await loadCities();
+      if (api.hasSession) {
+        await api.ensureFreshToken();
+        await loadMe();
+      }
+      offline = false;
+    } on ApiException catch (e) {
+      if (_invalidSession(e)) {
+        await api.expireSession();
+        _clearSessionState();
+      } else {
+        // Network/server errors must not destroy a valid stored session.
+        offline = true;
+      }
     } catch (e, stack) {
       debugPrint('App initialization failed: $e');
       debugPrintStack(stackTrace: stack);
+      offline = true;
     } finally {
       booting = false;
 
       if (!_disposed) {
         notifyListeners();
       }
+    }
+  }
+  /// Called when the app returns to the foreground. Shares the single-flight
+  /// refresh with boot so startup and resume cannot double-spend a token.
+  Future<void> resumeSession() {
+    if (booting || !api.hasSession) return Future.value();
+    return _resuming ??= _doResume().whenComplete(() => _resuming = null);
+  }
+
+  Future<void> _doResume() async {
+    try {
+      await api.flushPendingLogout();
+      await api.ensureFreshToken();
+      await loadMe();
+      offline = false;
+    } on ApiException catch (e) {
+      if (_invalidSession(e)) {
+        await api.expireSession();
+        _clearSessionState();
+      } else {
+        offline = true;
+      }
+    } catch (e) {
+      debugPrint('Session resume failed: $e');
+      offline = true;
+    }
+
+    if (!_disposed) {
+      notifyListeners();
     }
   }
 
@@ -206,9 +258,10 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
 
-    // These requests must not block the HomeShell.
-    unawaited(_loadSettings());
-    unawaited(refreshUnread());
+    // Awaited so callers of boot()/login() observe a fully hydrated state
+    // (settings + unread badge) before they continue.
+    await _loadSettings();
+    await refreshUnread();
   }
 
   Future<void> _loadSettings() async {
@@ -307,27 +360,31 @@ class AppState extends ChangeNotifier {
     String phone,
     String code,
   ) async {
-    if (code == AppState.devOtpCode) {
-      // Temporary dev bypass: accept the code and set a local session
-      // without calling the backend.
-      await api.setTokens({
-        'accessToken': 'dev-$phone',
-        'refreshToken': 'dev',
-      });
+    try {
+      final res = await api.post(
+        '/v1/auth/signup/verify',
+        body: {
+          'phone': phone,
+          'code': code,
+        },
+      );
+
+      await api.setTokens(Map<String, dynamic>.from(res as Map));
+
+      await loadMe();
       return;
+    } on ApiException catch (e) {
+      // The server answered (wrong/expired code, rate limit, …): surface it.
+      if (e.status != 0) rethrow;
+      // status 0 = unreachable network → fall through to the dev bypass.
     }
 
-    final res = await api.post(
-      '/v1/auth/signup/verify',
-      body: {
-        'phone': phone,
-        'code': code,
-      },
-    );
-
-    await api.setTokens(Map<String, dynamic>.from(res as Map));
-
-    await loadMe();
+    // Temporary dev bypass: accept the code and set a local session without
+    // calling the backend. Only reached when the backend cannot be reached.
+    await api.setTokens({
+      'accessToken': 'dev-$phone',
+      'refreshToken': 'dev',
+    });
   }
 
   // --------------------------------------------------
@@ -460,25 +517,41 @@ class AppState extends ChangeNotifier {
   // --------------------------------------------------
 
   Future<void> logout() async {
-    try {
-      if (api.refreshToken != null) {
+    final token = api.refreshToken;
+    if (token != null) {
+      try {
         await api.post(
           '/v1/auth/logout',
-          body: {
-            'refreshToken': api.refreshToken,
-          },
+          body: {'refreshToken': token},
+          auth: false,
+          timeout: const Duration(seconds: 15),
         );
+      } on ApiException catch (e) {
+        if (e.status == 0 || e.status >= 500) {
+          // Offline/server failure: keep a one-shot revocation token in secure
+          // storage and flush it on the next boot or resume.
+          await api.clear(retainForRevocation: true);
+          _clearSessionState();
+          offline = true;
+          _notify();
+          return;
+        }
+        // 401/404 means the session is already invalid on the server.
+      } catch (e) {
+        debugPrint('Remote logout failed: $e');
+        await api.clear(retainForRevocation: true);
+        _clearSessionState();
+        offline = true;
+        _notify();
+        return;
       }
-    } catch (e) {
-      debugPrint('Remote logout failed: $e');
     }
-
     await api.clear();
+    _clearSessionState();
+    _notify();
+  }
 
-    partner = null;
-    settings = {};
-    unread = 0;
-
+  void _notify() {
     if (!_disposed) {
       notifyListeners();
     }
