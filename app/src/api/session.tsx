@@ -1,6 +1,8 @@
+// app/src/api/session.tsx
+
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
-import { API_URL, api, getTokens, onSessionLost, setTokens, showError, type Tokens } from './client'
+import { API_URL, api, getTokens, getStoredMe, onSessionLost, setTokens, setStoredMe, showError, type Tokens } from './client'
 import { toast } from '../components/toast'
 import Phone from '../components/Phone'
 
@@ -27,12 +29,10 @@ type Session = {
   signOut: () => Promise<void>
   pending: PendingOtp | null
   setPending: (p: PendingOtp | null) => void
-  // Online toggle + language, used across many screens.
   online: boolean
   setOnline: (v: boolean) => Promise<boolean>
   lang: string
   setLang: (name: string) => Promise<void>
-  /** Server runs in TRIAL_MODE (demo OTP codes, demo orders). */
   trial: boolean
 }
 
@@ -44,9 +44,19 @@ const readPending = (): PendingOtp | null => { try { return JSON.parse(sessionSt
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Session['status']>(getTokens() ? 'loading' : 'out')
-  const [me, setMe] = useState<Me | null>(null)
+  const [me, setMeState] = useState<Me | null>(getStoredMe()) // Load from local storage initially
   const [pending, setPendingState] = useState<PendingOtp | null>(readPending)
   const [trial, setTrial] = useState(false)
+
+  // Wrapper to update both state and local storage. Accepts direct value or updater function.
+  const setMe = useCallback((m: Me | null | ((prev: Me | null) => Me | null)) => {
+    setMeState((prev) => {
+      const next = typeof m === 'function' ? m(prev) : m
+      setStoredMe(next)
+      return next
+    })
+  }, [])
+
   useEffect(() => {
     fetch(API_URL + '/health/ready').then((r) => r.json()).then((h) => setTrial(!!h.trial)).catch(() => {})
   }, [])
@@ -62,19 +72,30 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       else { setStatus('in'); showError(e) }
       return null
     }
-  }, [])
+  }, [setMe])
 
   useEffect(() => { if (getTokens()) void refreshMe() }, [refreshMe])
-  useEffect(() => onSessionLost(() => { setMe(null); setStatus('out'); toast('Your session ended. Please log in again.') }), [])
+  
+  useEffect(() => {
+    return onSessionLost(() => { 
+      setMe(null)
+      setStatus('out')
+      toast('Your session ended. Please log in again.') 
+    })
+  }, [setMe])
 
-  const signIn = useCallback(async (t: Tokens) => { setTokens(t); return refreshMe() }, [refreshMe])
+  const signIn = useCallback(async (t: Tokens) => { 
+    setTokens(t)
+    return refreshMe() 
+  }, [refreshMe])
+
   const signOut = useCallback(async () => {
     const t = getTokens()
     if (t) await api('/v1/auth/logout', { body: { refreshToken: t.refreshToken }, auth: false }).catch(() => {})
     setTokens(null)
-    setMe(null)
+    setMe(null) // This clears state and local storage
     setStatus('out')
-  }, [])
+  }, [setMe])
 
   const setPending = useCallback((p: PendingOtp | null) => {
     setPendingState(p)
@@ -92,14 +113,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       showError(e)
       return false
     }
-  }, [me])
+  }, [me, setMe])
 
   const setLang = useCallback(async (name: string) => {
     const code = (Object.keys(LANGS) as LangCode[]).find((k) => LANGS[k] === name)
     if (!code) return
     await api('/v1/me', { method: 'PATCH', body: { language: code } })
     setMe((m) => (m ? { ...m, language: code } : m))
-  }, [])
+  }, [setMe])
 
   return (
     <Ctx.Provider value={{ status, me, refreshMe, signIn, signOut, pending, setPending,
