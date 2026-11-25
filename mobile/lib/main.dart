@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/api_client.dart';
+import 'l10n/generated/app_localizations.dart';
 import 'screens/root_gate.dart';
 import 'state/app_state.dart';
 import 'ui/theme.dart';
@@ -21,11 +23,26 @@ class PartnerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'VP Nexues Partner',
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(),
-      home: RootGate(state: state),
+    // Rebuilds the whole app when AppState notifies (e.g. after the user
+    // applies a new language and loadMe() refreshes the settings).
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'VP Nexues Partner',
+          debugShowCheckedModeBanner: false,
+          theme: buildTheme(),
+          locale: state.locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: RootGate(state: state),
+        );
+      },
     );
   }
 }

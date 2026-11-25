@@ -1,3 +1,4 @@
+
 import 'package:intl/intl.dart';
 
 int asInt(dynamic v, [int fallback = 0]) {
@@ -134,15 +135,20 @@ String vehicleLabel(String type) {
   return labels[type] ?? type.replaceAll('_', ' ');
 }
 
+// Supported app language labels.
 String langLabel(String code) {
   const labels = {
     'en': 'English',
     'ta': 'Tamil',
+    'si': 'Sinhala',
     'hi': 'Hindi',
     'ml': 'Malayalam',
     'te': 'Telugu',
     'kn': 'Kannada',
+    'ms': 'Malay',
+    'ms_SG': 'Malay (Singapore)',
   };
+
   return labels[code] ?? 'English';
 }
 

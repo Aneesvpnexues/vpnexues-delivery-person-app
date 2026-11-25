@@ -36,7 +36,7 @@ app:
   otp-max-attempts: ${APP_OTP_MAX_ATTEMPTS:5}
   otp-dev-echo: ${APP_OTP_DEV_ECHO:true}
   trial-mode: ${APP_TRIAL_MODE:true}
-  cors-origins: ${APP_CORS_ORIGINS:http://localhost:3000,http://localhost:8080,http://localhost:5199,http://localhost:5200}
+  cors-origins: ${APP_CORS_ORIGINS:http://localhost:*,http://127.0.0.1:*,http://localhost:3000,http://localhost:8080,http://localhost:5199,http://localhost:5200}
   upload-dir: ${APP_UPLOAD_DIR:./uploads}
   public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
   instant-payout-fee-paise: ${APP_INSTANT_PAYOUT_FEE_PAISE:1000}

@@ -265,17 +265,15 @@ class _SosScreenState extends State<SosScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Container(
+                      SizedBox(
                         width: 44,
                         height: 44,
-                        decoration: BoxDecoration(
-                          color: [const Color(0xFFFDE0DD), const Color(0xFFEEF5DB), const Color(0xFFE0EFF3)][i],
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                        child: Icon(
-                          [LucideIcons.phone, LucideIcons.shield, LucideIcons.navigation][i],
-                          size: 19,
-                          color: [const Color(0xFFC92526), C.green, const Color(0xFF145B73)][i],
+                        child: Center(
+                          child: Icon(
+                            [LucideIcons.phone, LucideIcons.shield, LucideIcons.navigation][i],
+                            size: 19,
+                            color: [const Color(0xFFC92526), C.green, const Color(0xFF145B73)][i],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -339,76 +337,248 @@ class _SosScreenState extends State<SosScreen> {
             onTap: () => _raise(_incident, _incidents.firstWhere((e) => e.$2 == _incident).$1),
           ),
 
-          DBox(x: 20, y: 734, w: 372, h: 170, r: 24, bg: Colors.white, border: Border.all(color: C.line), shadow: sh(8, 20, .04)),
-          const DTxt('EMERGENCY CONTACTS', x: 36, y: 748, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.accent, ls: 1.2),
-          if (_contacts.length < 3 && !_loading)
-            DTxt('+ Add', x: 300, y: 750, w: 75, s: 13, wt: FontWeight.w700, lh: 18, c: C.green, align: TextAlign.right,
-                onTap: () => setState(() => _add = true)),
-          if (_loading)
-            const DTxt('Loading…', x: 36, y: 780, s: 12, c: C.muted)
-          else if (contacts.isEmpty) ...[
-            const DTxt('Add someone we should call if you’re in an accident.', x: 36, y: 780, w: 330, s: 13, lh: 19, c: C.muted),
-            Btn(x: 36, y: 826, w: 200, h: 44, fs: 12, icon: LucideIcons.plus, label: 'ADD CONTACT', onTap: () => setState(() => _add = true)),
-          ] else
-            for (var i = 0; i < contacts.length; i++) ...[
-              if (i > 0) DBox(x: 36, y: 822, w: 339, h: 1, bg: C.tint5),
-              Positioned(
-                left: 36,
-                top: 774 + i * 61,
-                width: 40,
-                height: 40,
-                child: Container(
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(color: i.isOdd ? C.yellow : C.green, shape: BoxShape.circle),
-                  child: Text(
-                    initials(asString(contacts[i]['name'], 'C')),
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: i.isOdd ? C.ink : Colors.white,
-                    ),
-                  ),
-                ),
+          // Keep the complete card inside the visible mobile canvas.
+          // DesignCanvas reserves the last 30 design pixels as bottom slack,
+          // so the usable content area ends at Y=885 (not Y=915).
+          // The incident button ends at Y=714; this card starts at Y=724.
+          Positioned(
+            left: 20,
+            top: 724,
+            width: 372,
+            height: 150,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: C.line),
+                boxShadow: sh(8, 20, .04),
               ),
-              DTxt(
-                '${asString(contacts[i]['name'])} · ${asString(contacts[i]['relationship'])}',
-                x: 91,
-                y: 775 + i * 61,
-                w: 190,
-                s: 15,
-                wt: FontWeight.w700,
-                lh: 21,
-                maxLines: 1,
-              ),
-              DTxt(
-                _mask(asString(contacts[i]['phone'])),
-                x: 91,
-                y: 797 + i * 61,
-                s: 12,
-                lh: 16.8,
-                c: C.muted,
-                onTap: () => _dial(asString(contacts[i]['phone'])),
-              ),
-              Positioned(
-                left: 268,
-                top: 774 + i * 61,
-                width: 100,
-                height: 40,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (asBool(contacts[i]['isPrimary']))
-                      Pill(label: 'Primary', bg: pillOk.bg, fg: pillOk.fg, dot: pillOk.fg)
-                    else
-                      GestureDetector(
-                        onTap: () => _removeContact(contacts[i]),
-                        child: const Icon(LucideIcons.trash2, size: 17, color: C.muted),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'EMERGENCY CONTACTS',
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: C.accent,
+                          ),
+                        ),
                       ),
-                  ],
-                ),
+                      if (_contacts.length < 3 && !_loading)
+                        TextButton(
+                          onPressed: () => setState(() => _add = true),
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(48, 32),
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            foregroundColor: C.green,
+                          ),
+                          child: const Text(
+                            '+ Add',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Expanded(
+                    child: _loading
+                        ? const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Loading…',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                color: C.muted,
+                              ),
+                            ),
+                          )
+                        : contacts.isEmpty
+                            ? Row(
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'Add someone we should call if you’re in an accident.',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 12,
+                                        height: 1.35,
+                                        color: C.muted,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    height: 40,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () =>
+                                          setState(() => _add = true),
+                                      icon: const Icon(
+                                        LucideIcons.plus,
+                                        size: 15,
+                                      ),
+                                      label: const Text(
+                                        'ADD CONTACT',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: C.green,
+                                        side: const BorderSide(
+                                          color: C.green,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  for (var i = 0; i < contacts.length; i++) ...[
+                                    if (i > 0)
+                                      const Divider(
+                                        height: 1,
+                                        thickness: 1,
+                                        color: C.tint5,
+                                      ),
+                                    Expanded(
+                                      child: Row(
+                                              children: [
+                                                Container(
+                                                  width: 36,
+                                                  height: 36,
+                                                  alignment: Alignment.center,
+                                                  decoration: BoxDecoration(
+                                                    color: i.isOdd
+                                                        ? C.yellow
+                                                        : C.green,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Text(
+                                                    initials(
+                                                      asString(
+                                                        contacts[i]['name'],
+                                                        'C',
+                                                      ),
+                                                    ),
+                                                    style: TextStyle(
+                                                      fontFamily: 'Inter',
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: i.isOdd
+                                                          ? C.ink
+                                                          : Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        '${asString(contacts[i]['name'])} · ${asString(contacts[i]['relationship'])}',
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style: const TextStyle(
+                                                          fontFamily: 'Inter',
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: C.ink,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        _mask(
+                                                          asString(
+                                                            contacts[i]['phone'],
+                                                          ),
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style: const TextStyle(
+                                                          fontFamily: 'Inter',
+                                                          fontSize: 11,
+                                                          color: C.muted,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                if (asBool(
+                                                  contacts[i]['isPrimary'],
+                                                ))
+                                                  Pill(
+                                                    label: 'Primary',
+                                                    bg: pillOk.bg,
+                                                    fg: pillOk.fg,
+                                                    dot: pillOk.fg,
+                                                  )
+                                                else
+                                                  IconButton(
+                                                    tooltip: 'Remove contact',
+                                                    onPressed: () =>
+                                                        _removeContact(
+                                                      contacts[i],
+                                                    ),
+                                                    icon: const Icon(
+                                                      LucideIcons.trash2,
+                                                      size: 16,
+                                                      color: C.muted,
+                                                    ),
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                      minWidth: 32,
+                                                      minHeight: 32,
+                                                    ),
+                                                    padding: EdgeInsets.zero,
+                                                  ),
+                                              ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                  ),
+                ],
               ),
-            ],
+            ),
+          ),
 
           if (_add)
             Modal(

@@ -43,6 +43,20 @@ export default async function engagementRoutes(app: FastifyInstance) {
                   (SELECT body FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) AS last_message
            FROM support_tickets t WHERE t.partner_id = $1 ORDER BY t.updated_at DESC LIMIT 50`, [partnerId(req)]))
 
+  /** Messages for a ticket in the camelCase shape the Flutter app expects (`createdAt`, not `created_at`). */
+  const ticketMessages = async (ticketId: string) => {
+    const rows = await query(`SELECT id, sender, body, created_at FROM support_messages WHERE ticket_id = $1 ORDER BY created_at`, [ticketId])
+    return rows.map((m) => ({ id: m.id, sender: m.sender, body: m.body, createdAt: m.created_at }))
+  }
+
+  app.get('/support/tickets/:id', async (req) => {
+    const { id } = parse(z.object({ id: z.uuid() }), req.params)
+    const t = await one(`SELECT id, topic, status, order_id, created_at, updated_at FROM support_tickets
+           WHERE id = $1 AND partner_id = $2`, [id, partnerId(req)])
+    if (!t) throw notFound('Ticket')
+    return { ticket: t, messages: await ticketMessages(id) }
+  })
+
   app.post('/support/tickets', async (req, reply) => {
     const b = parse(z.object({ topic: z.string().trim().min(2).max(80), message: z.string().trim().min(1).max(2000), orderId: z.uuid().optional() }), req.body)
     const t = await tx(async (db) => {
@@ -53,7 +67,8 @@ export default async function engagementRoutes(app: FastifyInstance) {
     })
     // TODO: route to the agent desk (e.g. Amazon Connect / Freshdesk) via SQS.
     reply.status(201)
-    return t
+    // Flutter expects `{ ticket, messages }`; the spread keeps the original flat fields for existing consumers.
+    return { ...t, ticket: t, messages: await ticketMessages(t.id) }
   })
 
   app.get('/support/tickets/:id/messages', async (req) => {

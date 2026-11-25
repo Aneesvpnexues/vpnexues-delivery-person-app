@@ -221,11 +221,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
+            SizedBox(
               width: 44,
               height: 44,
-              decoration: BoxDecoration(color: ic.$2, borderRadius: BorderRadius.circular(14)),
-              child: Icon(ic.$1, size: 19, color: ic.$3),
+              child: Center(child: Icon(ic.$1, size: 19, color: ic.$3)),
             ),
             const SizedBox(width: 12),
             Expanded(

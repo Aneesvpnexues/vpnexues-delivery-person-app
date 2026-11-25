@@ -27,7 +27,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource(AppProperties props) {
         CorsConfiguration c = new CorsConfiguration();
-        c.setAllowedOrigins(List.of(props.corsOriginList()));
+        c.setAllowedOriginPatterns(List.of(props.corsOriginList()));
         c.setAllowedMethods(List.of("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         c.setAllowedHeaders(List.of("Content-Type", "Authorization", "Idempotency-Key"));
         c.setMaxAge(86400L);

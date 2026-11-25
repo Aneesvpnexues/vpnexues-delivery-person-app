@@ -1,0 +1,215 @@
+{
+  "@@locale": "hi",
+  "navHome": "होम",
+  "navOrders": "ऑर्डर",
+  "navEarnings": "कमाई",
+  "navProfile": "प्रोफ़ाइल",
+  "stepOf5": "5 में से चरण {step}",
+  "@stepOf5": {
+    "placeholders": {
+      "step": {
+        "type": "num"
+      }
+    }
+  },
+  "languageTitle": "भाषा",
+  "langDefault": "डिफ़ॉल्ट",
+  "langEn": "अंग्रेज़ी",
+  "langTa": "तमिल",
+  "langSi": "सिंहली",
+  "notAdded": "जोड़ा नहीं गया",
+  "statusAssigned": "नया ऑर्डर",
+  "statusAccepted": "स्वीकार किया गया",
+  "statusAtPickup": "पिकअप स्थान पर",
+  "statusPickedUp": "पिकअप किया गया",
+  "statusArrived": "पहुंच गया",
+  "statusDelivered": "डिलीवर किया गया",
+  "statusCancelled": "रद्द किया गया",
+  "settingsTitle": "सेटिंग्स",
+  "secDeliveries": "डिलीवरी",
+  "autoAcceptTitle": "पास के ऑर्डर अपने आप स्वीकार करें",
+  "autoAcceptSub": "आपकी लोकेशन से 2 किमी के भीतर",
+  "zoneTitle": "शहर, हब और डिलीवरी क्षेत्र",
+  "noHub": "कोई हब नहीं",
+  "navTitle": "नेविगेशन",
+  "navInApp": "ऐप के अंदर के मैप",
+  "navGoogleMaps": "Google Maps · चरण-दर-चरण",
+  "secAlerts": "अलर्ट",
+  "newOrderSoundTitle": "नए ऑर्डर की आवाज़",
+  "newOrderSoundSub": "साइलेंट मोड में भी बजेगा",
+  "payoutAlertsTitle": "भुगतान और बोनस अलर्ट",
+  "offersTitle": "ऑफ़र और अभियान",
+  "secApp": "ऐप",
+  "darkModeTitle": "रात की शिफ्ट के लिए डार्क मोड",
+  "dataSaverTitle": "डेटा सेवर",
+  "dataSaverSub": "3G / कमजोर सिग्नल पर हल्के मैप",
+  "secSecurity": "सुरक्षा",
+  "changePasswordTitle": "पासवर्ड बदलें",
+  "fingerprintTitle": "फ़िंगरप्रिंट से अनलॉक",
+  "loadingSettings": "सेटिंग्स लोड हो रही हैं…",
+  "errLoadSettings": "सेटिंग्स लोड नहीं हो सकीं",
+  "errSaveSetting": "यह सेटिंग सेव नहीं हो सकी",
+  "appLanguageTitle": "ऐप की भाषा",
+  "appLanguageDesc": "मेनू, अलर्ट और वॉइस नेविगेशन के लिए भाषा चुनें।",
+  "voiceNavTitle": "उसी भाषा में वॉइस नेविगेशन",
+  "voiceNavSub": "चरण-दर-चरण निर्देश",
+  "saving": "सेव हो रहा है…",
+  "apply": "लागू करें",
+  "languageSetTo": "भाषा {name} पर सेट की गई",
+  "@languageSetTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "errChangeLanguage": "भाषा नहीं बदली जा सकी",
+  "profileTitle": "प्रोफ़ाइल",
+  "kycVerified": "KYC सत्यापित",
+  "kycInReview": "KYC की समीक्षा जारी है",
+  "kycNotStarted": "KYC शुरू नहीं हुआ",
+  "kycNeedsAttention": "KYC पर ध्यान देना आवश्यक है",
+  "partnerId": "पार्टनर ID {code} · {place}",
+  "@partnerId": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "statRating": "रेटिंग",
+  "statDeliveries": "डिलीवरी",
+  "statPartnerSince": "पार्टनर बने",
+  "secAccount": "खाता",
+  "personalInfoTitle": "व्यक्तिगत जानकारी",
+  "documentsTitle": "दस्तावेज़",
+  "docsToUpload": "अपलोड करने के लिए {count}",
+  "@docsToUpload": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "docsExpiring": "{count} की समय-सीमा समाप्त हो रही है",
+  "@docsExpiring": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "bankTitle": "बैंक और UPI",
+  "vehicleTitle": "वाहन",
+  "secAppSupport": "ऐप और सहायता",
+  "helpSupport": "मदद और सहायता",
+  "sosContacts": "SOS और आपातकालीन संपर्क",
+  "aboutApp": "VP Nexues के बारे में",
+  "logoutRow": "लॉग आउट",
+  "logoutTitle": "लॉग आउट करें?",
+  "logoutBody": "दोबारा लॉग इन करने तक आपको नए ऑर्डर नहीं मिलेंगे।",
+  "logoutBtn": "लॉग आउट",
+  "cancelBtn": "रद्द करें",
+  "greetingMorning": "सुप्रभात",
+  "greetingAfternoon": "नमस्कार",
+  "greetingEvening": "शुभ संध्या",
+  "online": "ऑनलाइन",
+  "offline": "ऑफ़लाइन",
+  "change": "बदलें",
+  "newOrderPill": "नया ऑर्डर · स्वीकार करने के लिए टैप करें",
+  "nextPill": "अगला · {status}",
+  "@nextPill": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "orderOnWay": "#{code} रास्ते में है",
+  "@orderOnWay": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAtHub": "#{code} हब पर इंतज़ार कर रहा है",
+  "@orderAtHub": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "viewOrder": "ऑर्डर देखें",
+  "continueBtn": "जारी रखें",
+  "crates": "{count,plural, =1{{count} क्रेट} other{{count} क्रेट}}",
+  "@crates": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkingOrders": "ऑर्डर जाँचे जा रहे हैं…",
+  "allCaughtUp": "सब कुछ अपडेट है",
+  "loadingOrders": "आपके ऑर्डर लोड हो रहे हैं",
+  "noOrders": "अभी कोई ऑर्डर नहीं है",
+  "stayOnline": "अपने क्षेत्र में ऑनलाइन रहें। हब द्वारा असाइन किए जाते ही नए ऑर्डर यहाँ दिखेंगे।",
+  "goOnline": "अपने हब से ऑर्डर पाने के लिए ऑनलाइन जाएँ।",
+  "creating": "बनाया जा रहा है…",
+  "createDemo": "डेमो ऑर्डर बनाएँ (ट्रायल)",
+  "thenDeliverTo": "इसके बाद यहाँ डिलीवर करें",
+  "yourDaySoFar": "आज का आपका काम",
+  "deliveriesToday": "{count,plural, =1{{count} डिलीवरी आज} other{{count} डिलीवरी आज}}",
+  "@deliveriesToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "earningsCreditNote": "ऑर्डर सौंपते ही कमाई खाते में जमा हो जाती है",
+  "viewEarnings": "कमाई देखें →",
+  "todayEarned": "आज की कमाई: {amount}",
+  "@todayEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "availableToWithdraw": "निकासी के लिए उपलब्ध: {amount}",
+  "@availableToWithdraw": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moreQueued": "{count} और कतार में",
+  "@moreQueued": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "errStatus": "आपका स्टेटस बदला नहीं जा सका",
+  "demoCreated": "डेमो ऑर्डर {code} बनाया गया · डिलीवरी कोड {demoCode}",
+  "@demoCreated": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "demoCode": {
+        "type": "String"
+      }
+    }
+  },
+  "errDemo": "डेमो ऑर्डर नहीं बनाया जा सका"
+  
+}

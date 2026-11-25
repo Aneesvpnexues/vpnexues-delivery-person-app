@@ -228,11 +228,11 @@ class _ZoneScreenState extends State<ZoneScreen> {
               ),
             ),
           ),
-          Btn(y: 806, label: _busy ? 'SAVING…' : 'SAVE RADIUS', onTap: _busy ? null : _save),
+          Btn(y: 798, label: _busy ? 'SAVING…' : 'SAVE RADIUS', onTap: _busy ? null : _save),
           DTxt(
             'Change city or request a different hub',
             x: 20,
-            y: 876,
+            y: 858,
             w: 372,
             s: 13,
             wt: FontWeight.w600,

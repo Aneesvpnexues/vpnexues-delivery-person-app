@@ -1,0 +1,215 @@
+
+{
+  "@@locale": "te",
+  "navHome": "హోమ్",
+  "navOrders": "ఆర్డర్లు",
+  "navEarnings": "ఆదాయం",
+  "navProfile": "ప్రొఫైల్",
+  "stepOf5": "5లో {step}వ దశ",
+  "@stepOf5": {
+    "placeholders": {
+      "step": {
+        "type": "num"
+      }
+    }
+  },
+  "languageTitle": "భాష",
+  "langDefault": "డిఫాల్ట్",
+  "langEn": "ఆంగ్లం",
+  "langTa": "తమిళం",
+  "langSi": "సింహళం",
+  "notAdded": "జోడించబడలేదు",
+  "statusAssigned": "కొత్త ఆర్డర్",
+  "statusAccepted": "ఆమోదించబడింది",
+  "statusAtPickup": "పికప్ ప్రదేశంలో ఉంది",
+  "statusPickedUp": "పికప్ చేయబడింది",
+  "statusArrived": "చేరుకుంది",
+  "statusDelivered": "డెలివరీ చేయబడింది",
+  "statusCancelled": "రద్దు చేయబడింది",
+  "settingsTitle": "సెట్టింగ్‌లు",
+  "secDeliveries": "డెలివరీలు",
+  "autoAcceptTitle": "దగ్గరలోని ఆర్డర్‌లను ఆటోమేటిక్‌గా అంగీకరించండి",
+  "autoAcceptSub": "మీ స్థానం నుండి 2 కి.మీ పరిధిలో",
+  "zoneTitle": "నగరం, హబ్ మరియు డెలివరీ ప్రాంతం",
+  "noHub": "హబ్ లేదు",
+  "navTitle": "నావిగేషన్",
+  "navInApp": "యాప్‌లోని మ్యాప్‌లు",
+  "navGoogleMaps": "Google Maps · దశలవారీ మార్గదర్శకం",
+  "secAlerts": "అలర్ట్‌లు",
+  "newOrderSoundTitle": "కొత్త ఆర్డర్ శబ్దం",
+  "newOrderSoundSub": "సైలెంట్ మోడ్‌లో కూడా శబ్దం వస్తుంది",
+  "payoutAlertsTitle": "చెల్లింపు మరియు బోనస్ అలర్ట్‌లు",
+  "offersTitle": "ఆఫర్‌లు మరియు ప్రచారాలు",
+  "secApp": "యాప్",
+  "darkModeTitle": "రాత్రి షిఫ్ట్ కోసం డార్క్ మోడ్",
+  "dataSaverTitle": "డేటా సేవర్",
+  "dataSaverSub": "3G / బలహీనమైన సిగ్నల్‌లో తక్కువ డేటా ఉపయోగించే మ్యాప్‌లు",
+  "secSecurity": "భద్రత",
+  "changePasswordTitle": "పాస్‌వర్డ్ మార్చండి",
+  "fingerprintTitle": "వేలిముద్రతో అన్‌లాక్ చేయండి",
+  "loadingSettings": "సెట్టింగ్‌లు లోడ్ అవుతున్నాయి…",
+  "errLoadSettings": "సెట్టింగ్‌లను లోడ్ చేయలేకపోయాము",
+  "errSaveSetting": "ఈ సెట్టింగ్‌ను సేవ్ చేయలేకపోయాము",
+  "appLanguageTitle": "యాప్ భాష",
+  "appLanguageDesc": "మెనూలు, అలర్ట్‌లు మరియు వాయిస్ నావిగేషన్ కోసం భాషను ఎంచుకోండి.",
+  "voiceNavTitle": "అదే భాషలో వాయిస్ నావిగేషన్",
+  "voiceNavSub": "దశలవారీ సూచనలు",
+  "saving": "సేవ్ అవుతోంది…",
+  "apply": "వర్తింపజేయండి",
+  "languageSetTo": "భాష {name}కి మార్చబడింది",
+  "@languageSetTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "errChangeLanguage": "భాషను మార్చలేకపోయాము",
+  "profileTitle": "ప్రొఫైల్",
+  "kycVerified": "KYC ధృవీకరించబడింది",
+  "kycInReview": "KYC పరిశీలనలో ఉంది",
+  "kycNotStarted": "KYC ప్రారంభించబడలేదు",
+  "kycNeedsAttention": "KYCపై శ్రద్ధ అవసరం",
+  "partnerId": "పార్ట్నర్ ID {code} · {place}",
+  "@partnerId": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "statRating": "రేటింగ్",
+  "statDeliveries": "డెలివరీలు",
+  "statPartnerSince": "పార్ట్నర్ అయిన తేదీ",
+  "secAccount": "ఖాతా",
+  "personalInfoTitle": "వ్యక్తిగత సమాచారం",
+  "documentsTitle": "పత్రాలు",
+  "docsToUpload": "అప్‌లోడ్ చేయాల్సినవి {count}",
+  "@docsToUpload": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "docsExpiring": "{count} పత్రాల గడువు ముగియబోతోంది",
+  "@docsExpiring": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "bankTitle": "బ్యాంక్ మరియు UPI",
+  "vehicleTitle": "వాహనం",
+  "secAppSupport": "యాప్ మరియు సహాయం",
+  "helpSupport": "సహాయం మరియు మద్దతు",
+  "sosContacts": "SOS మరియు అత్యవసర సంప్రదింపులు",
+  "aboutApp": "VP Nexues గురించి",
+  "logoutRow": "లాగ్ అవుట్",
+  "logoutTitle": "లాగ్ అవుట్ చేయాలా?",
+  "logoutBody": "మళ్లీ లాగిన్ అయ్యే వరకు మీకు కొత్త ఆర్డర్‌లు రావు.",
+  "logoutBtn": "లాగ్ అవుట్",
+  "cancelBtn": "రద్దు చేయండి",
+  "greetingMorning": "శుభోదయం",
+  "greetingAfternoon": "శుభ మధ్యాహ్నం",
+  "greetingEvening": "శుభ సాయంత్రం",
+  "online": "ఆన్‌లైన్",
+  "offline": "ఆఫ్‌లైన్",
+  "change": "మార్చండి",
+  "newOrderPill": "కొత్త ఆర్డర్ · అంగీకరించడానికి నొక్కండి",
+  "nextPill": "తదుపరి · {status}",
+  "@nextPill": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "orderOnWay": "#{code} మార్గంలో ఉంది",
+  "@orderOnWay": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAtHub": "#{code} హబ్‌లో వేచి ఉంది",
+  "@orderAtHub": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "viewOrder": "ఆర్డర్ చూడండి",
+  "continueBtn": "కొనసాగించండి",
+  "crates": "{count,plural, =1{{count} క్రేట్} other{{count} క్రేట్‌లు}}",
+  "@crates": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkingOrders": "ఆర్డర్‌లను తనిఖీ చేస్తున్నాము…",
+  "allCaughtUp": "అన్నీ అప్‌డేట్ అయ్యాయి",
+  "loadingOrders": "మీ ఆర్డర్‌లు లోడ్ అవుతున్నాయి",
+  "noOrders": "ప్రస్తుతం ఆర్డర్‌లు ఏవీ లేవు",
+  "stayOnline": "మీ ప్రాంతంలో ఆన్‌లైన్‌లో ఉండండి. హబ్ ఆర్డర్‌లను కేటాయించినప్పుడు అవి ఇక్కడ కనిపిస్తాయి.",
+  "goOnline": "మీ హబ్ నుండి ఆర్డర్‌లను పొందడానికి ఆన్‌లైన్‌లోకి వెళ్లండి.",
+  "creating": "సృష్టిస్తోంది…",
+  "createDemo": "డెమో ఆర్డర్ సృష్టించండి (ట్రయల్)",
+  "thenDeliverTo": "తర్వాత ఇక్కడ డెలివరీ చేయండి",
+  "yourDaySoFar": "ఈరోజు మీ పని",
+  "deliveriesToday": "{count,plural, =1{ఈరోజు {count} డెలివరీ} other{ఈరోజు {count} డెలివరీలు}}",
+  "@deliveriesToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "earningsCreditNote": "ఆర్డర్‌ను అప్పగించిన వెంటనే మీ ఆదాయం ఖాతాలో జమ అవుతుంది",
+  "viewEarnings": "ఆదాయాన్ని చూడండి →",
+  "todayEarned": "ఈరోజు సంపాదన: {amount}",
+  "@todayEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "availableToWithdraw": "విత్‌డ్రా చేసుకోవడానికి అందుబాటులో ఉంది: {amount}",
+  "@availableToWithdraw": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moreQueued": "మరో {count} క్యూలో ఉన్నాయి",
+  "@moreQueued": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "errStatus": "మీ స్థితిని మార్చలేకపోయాము",
+  "demoCreated": "డెమో ఆర్డర్ {code} సృష్టించబడింది · డెలివరీ కోడ్ {demoCode}",
+  "@demoCreated": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "demoCode": {
+        "type": "String"
+      }
+    }
+  },
+  "errDemo": "డెమో ఆర్డర్‌ను సృష్టించలేకపోయాము"
+}

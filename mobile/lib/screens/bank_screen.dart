@@ -271,15 +271,25 @@ class _BankScreenState extends State<BankScreen> {
           const DTxt('Every payout with its bank reference', x: 36, y: 674, w: 250, s: 12, lh: 16.8, c: C.muted),
           const Positioned(left: 360, top: 664, child: Icon(LucideIcons.chevronRight, size: 16, color: Color(0xFF8A988F))),
 
-          Positioned(
-            left: 20,
-            top: 760,
-            child: Btn(w: 372, kind: BtnKind.outline, icon: LucideIcons.plus, label: 'ADD BANK ACCOUNT', onTap: () => _add('bank')),
+          // Bottom action buttons: same width, same left alignment,
+          // consistent vertical spacing, and enough room below the last button.
+          Btn(
+            y: 744,
+            w: 372,
+            h: 56,
+            kind: BtnKind.outline,
+            icon: LucideIcons.plus,
+            label: 'ADD BANK ACCOUNT',
+            onTap: () => _add('bank'),
           ),
-          Positioned(
-            left: 20,
-            top: 830,
-            child: Btn(w: 372, kind: BtnKind.outline, icon: LucideIcons.zap, label: 'ADD UPI ID', onTap: () => _add('upi')),
+          Btn(
+            y: 812,
+            w: 372,
+            h: 56,
+            kind: BtnKind.outline,
+            icon: LucideIcons.zap,
+            label: 'ADD UPI ID',
+            onTap: () => _add('upi'),
           ),
 
           if (_pick != null)
