@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ChevronLeft, LocateFixed } from 'lucide-react'
+import { ArrowLeft, LocateFixed } from 'lucide-react'
 import Phone from '../components/Phone'
-import { Box, Btn, C, Ic, LinkText, P, Pill, RoundBtn, Screen, T, card, pill, toast } from '../components/kit'
-import { topBleed } from '../components/ui'
+import { Box, Btn, C, Header, LinkText, P, Pill, RoundBtn, Screen, T, card, pill, toast } from '../components/kit'
+import { MapArt } from '../components/ui'
 import { api, showError } from '../api/client'
 import { useApi, useSession } from '../api/session'
 import mapZone from '../assets/art/map-zone.png'
@@ -31,7 +31,7 @@ export function Zone() {
   }
   return (
     <Screen>
-      <img src={mapZone} alt="Zone map" style={topBleed(322)} />
+      <MapArt src={mapZone} h={322} alt="Zone map" />
       <RoundBtn icon={ArrowLeft} x={20} y={48} onClick={() => nav(-1)} />
       <RoundBtn icon={LocateFixed} x={344} y={48} onClick={() => void z.reload().then(() => toast('Zone refreshed'))} />
       <Pill x={20} y={279} w={155} label={`${km} km service radius`} color="#fff" dot="#b6dc45" />
@@ -89,8 +89,7 @@ export function ChangeCity() {
   }
   return (
     <Phone>
-      <Box onClick={() => nav(P('1:3906'))} x={12} y={44} w={48} h={44}><Ic icon={ChevronLeft} x={6} y={11} s={22} sw={3} c={C.ink} /></Box>
-      <T x={80} y={51} s={20} wt={700} lh={28}>Change city or hub</T>
+      <Header title="Change city or hub" to={P('1:3906')} />
       <T x={20} y={122} s={22} wt={700} lh={30}>Choose your delivery city</T>
       <T x={20} y={164} s={13} lh={18.2}>{`Current city: ${me?.city.name ?? '…'}`}</T>
       {(cities.data ?? []).slice(0, 3).map((c, i) => (
