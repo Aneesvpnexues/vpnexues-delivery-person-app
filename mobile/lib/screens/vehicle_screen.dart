@@ -212,20 +212,20 @@ class _VehicleScreenState extends State<VehicleScreen> {
             align: TextAlign.center,
           ),
 
-          DBox(x: 20, y: 370, w: 372, h: 180, r: 24, bg: Colors.white, border: Border.all(color: C.line), shadow: sh(8, 20, .04)),
+          DBox(x: 20, y: 370, w: 372, h: 165, r: 24, bg: Colors.white, border: Border.all(color: C.line), shadow: sh(8, 20, .04)),
           for (var i = 0; i < specs.length; i++) ...[
-            DTxt(specs[i].$1, x: 37 + (i % 2) * 175, y: 388 + (i ~/ 2) * 54, s: 10.5, wt: FontWeight.w700, lh: 14.7, c: C.muted),
-            DTxt(specs[i].$2, x: 37 + (i % 2) * 175, y: 405 + (i ~/ 2) * 54, w: 165, s: 15, wt: FontWeight.w700, lh: 21, maxLines: 1),
+            DTxt(specs[i].$1, x: 37 + (i % 2) * 175, y: 384 + (i ~/ 2) * 50, s: 10.5, wt: FontWeight.w700, lh: 14.7, c: C.muted),
+            DTxt(specs[i].$2, x: 37 + (i % 2) * 175, y: 400 + (i ~/ 2) * 50, w: 165, s: 15, wt: FontWeight.w700, lh: 21, maxLines: 1),
           ],
 
-          DBox(x: 20, y: 565, w: 372, h: 222, r: 24, bg: Colors.white, border: Border.all(color: C.line), shadow: sh(8, 20, .04)),
+          DBox(x: 20, y: 545, w: 372, h: 195, r: 24, bg: Colors.white, border: Border.all(color: C.line), shadow: sh(8, 20, .04)),
           for (var i = 0; i < 3; i++) ...[
-            if (i > 0) DBox(x: 36, y: 565 + i * 73, w: 340, h: 1, bg: C.tint5),
+            if (i > 0) DBox(x: 36, y: 545 + i * 65, w: 340, h: 1, bg: C.tint5),
             Positioned(
               left: 36,
-              top: 565 + i * 73,
+              top: 545 + i * 65,
               width: 340,
-              height: 73,
+              height: 65,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => _upload(['vehicle_rc', 'vehicle_insurance', 'pucc'][i]),
@@ -264,20 +264,21 @@ class _VehicleScreenState extends State<VehicleScreen> {
               ),
             ),
           ],
+          // Bottom actions are kept inside the visible design area so both buttons show fully.
           Btn(
-            y: 782,
+            x: 20,
+            y: 755,
+            w: 372,
+            h: 52,
             label: insurance == null ? 'UPLOAD INSURANCE' : 'RENEW INSURANCE',
             onTap: () => _upload('vehicle_insurance'),
           ),
-          DTxt(
-            v == null ? 'Add vehicle details' : 'Edit vehicle details',
+          Btn(
             x: 20,
-            y: 861,
+            y: 815,
             w: 372,
-            s: 14,
-            wt: FontWeight.w600,
-            c: C.green,
-            align: TextAlign.center,
+            h: 52,
+            label: v == null ? 'ADD VEHICLE DETAILS' : 'EDIT VEHICLE DETAILS',
             onTap: _openEdit,
           ),
 

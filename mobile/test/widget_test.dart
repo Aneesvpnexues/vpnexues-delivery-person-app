@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:vpnexues_partner/core/api_client.dart';
 import 'package:vpnexues_partner/core/format.dart';
+import 'package:vpnexues_partner/l10n/generated/app_localizations.dart';
 import 'package:vpnexues_partner/screens/login_screen.dart';
 import 'package:vpnexues_partner/state/app_state.dart';
 import 'package:vpnexues_partner/ui/theme.dart';
@@ -33,6 +34,8 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(
       theme: buildTheme(),
+      localizationsDelegates: const [AppLocalizations.delegate],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: LoginScreen(state: state),
     ));
 

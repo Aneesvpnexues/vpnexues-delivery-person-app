@@ -1,0 +1,215 @@
+
+{
+  "@@locale": "ms",
+  "navHome": "Laman Utama",
+  "navOrders": "Pesanan",
+  "navEarnings": "Pendapatan",
+  "navProfile": "Profil",
+  "stepOf5": "Langkah {step} daripada 5",
+  "@stepOf5": {
+    "placeholders": {
+      "step": {
+        "type": "num"
+      }
+    }
+  },
+  "languageTitle": "Bahasa",
+  "langDefault": "Lalai",
+  "langEn": "Bahasa Inggeris",
+  "langTa": "Bahasa Tamil",
+  "langSi": "Bahasa Sinhala",
+  "notAdded": "Belum ditambah",
+  "statusAssigned": "Pesanan baharu",
+  "statusAccepted": "Diterima",
+  "statusAtPickup": "Di lokasi pengambilan",
+  "statusPickedUp": "Telah diambil",
+  "statusArrived": "Telah tiba",
+  "statusDelivered": "Telah dihantar",
+  "statusCancelled": "Dibatalkan",
+  "settingsTitle": "Tetapan",
+  "secDeliveries": "Penghantaran",
+  "autoAcceptTitle": "Terima pesanan berdekatan secara automatik",
+  "autoAcceptSub": "Dalam lingkungan 2 km dari lokasi anda",
+  "zoneTitle": "Bandar, hab dan kawasan penghantaran",
+  "noHub": "Tiada hab",
+  "navTitle": "Navigasi",
+  "navInApp": "Peta dalam aplikasi",
+  "navGoogleMaps": "Google Maps · Panduan langkah demi langkah",
+  "secAlerts": "Amaran",
+  "newOrderSoundTitle": "Bunyi pesanan baharu",
+  "newOrderSoundSub": "Bunyi akan dimainkan walaupun dalam mod senyap",
+  "payoutAlertsTitle": "Amaran pembayaran dan bonus",
+  "offersTitle": "Tawaran dan kempen",
+  "secApp": "Aplikasi",
+  "darkModeTitle": "Mod gelap untuk syif malam",
+  "dataSaverTitle": "Penjimatan data",
+  "dataSaverSub": "Peta ringan untuk 3G / isyarat lemah",
+  "secSecurity": "Keselamatan",
+  "changePasswordTitle": "Tukar kata laluan",
+  "fingerprintTitle": "Buka kunci dengan cap jari",
+  "loadingSettings": "Memuatkan tetapan…",
+  "errLoadSettings": "Tetapan tidak dapat dimuatkan",
+  "errSaveSetting": "Tetapan ini tidak dapat disimpan",
+  "appLanguageTitle": "Bahasa aplikasi",
+  "appLanguageDesc": "Pilih bahasa untuk menu, amaran dan navigasi suara.",
+  "voiceNavTitle": "Navigasi suara dalam bahasa yang sama",
+  "voiceNavSub": "Arahan langkah demi langkah",
+  "saving": "Menyimpan…",
+  "apply": "Gunakan",
+  "languageSetTo": "Bahasa ditetapkan kepada {name}",
+  "@languageSetTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "errChangeLanguage": "Bahasa tidak dapat ditukar",
+  "profileTitle": "Profil",
+  "kycVerified": "KYC disahkan",
+  "kycInReview": "KYC sedang disemak",
+  "kycNotStarted": "KYC belum dimulakan",
+  "kycNeedsAttention": "KYC memerlukan perhatian",
+  "partnerId": "ID Rakan Kongsi {code} · {place}",
+  "@partnerId": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "statRating": "Penilaian",
+  "statDeliveries": "Penghantaran",
+  "statPartnerSince": "Rakan kongsi sejak",
+  "secAccount": "Akaun",
+  "personalInfoTitle": "Maklumat peribadi",
+  "documentsTitle": "Dokumen",
+  "docsToUpload": "{count} untuk dimuat naik",
+  "@docsToUpload": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "docsExpiring": "{count} akan tamat tempoh",
+  "@docsExpiring": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "bankTitle": "Bank dan UPI",
+  "vehicleTitle": "Kenderaan",
+  "secAppSupport": "Aplikasi dan sokongan",
+  "helpSupport": "Bantuan dan sokongan",
+  "sosContacts": "SOS dan kenalan kecemasan",
+  "aboutApp": "Tentang VP Nexues",
+  "logoutRow": "Log keluar",
+  "logoutTitle": "Log keluar?",
+  "logoutBody": "Anda tidak akan menerima pesanan baharu sehingga anda log masuk semula.",
+  "logoutBtn": "Log keluar",
+  "cancelBtn": "Batal",
+  "greetingMorning": "Selamat pagi",
+  "greetingAfternoon": "Selamat tengah hari",
+  "greetingEvening": "Selamat petang",
+  "online": "Dalam talian",
+  "offline": "Luar talian",
+  "change": "Tukar",
+  "newOrderPill": "Pesanan baharu · Ketik untuk menerima",
+  "nextPill": "Seterusnya · {status}",
+  "@nextPill": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "orderOnWay": "#{code} sedang dalam perjalanan",
+  "@orderOnWay": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAtHub": "#{code} sedang menunggu di hab",
+  "@orderAtHub": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "viewOrder": "Lihat pesanan",
+  "continueBtn": "Teruskan",
+  "crates": "{count,plural, =1{{count} peti} other{{count} peti}}",
+  "@crates": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkingOrders": "Menyemak pesanan…",
+  "allCaughtUp": "Semua sudah dikemas kini",
+  "loadingOrders": "Memuatkan pesanan anda",
+  "noOrders": "Tiada pesanan buat masa ini",
+  "stayOnline": "Kekal dalam talian di kawasan anda. Pesanan baharu akan muncul di sini apabila diberikan oleh hab.",
+  "goOnline": "Pergi dalam talian untuk menerima pesanan daripada hab anda.",
+  "creating": "Sedang mencipta…",
+  "createDemo": "Cipta pesanan demo (percubaan)",
+  "thenDeliverTo": "Kemudian hantar ke sini",
+  "yourDaySoFar": "Aktiviti anda hari ini",
+  "deliveriesToday": "{count,plural, =1{{count} penghantaran hari ini} other{{count} penghantaran hari ini}}",
+  "@deliveriesToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "earningsCreditNote": "Pendapatan dikreditkan ke akaun anda sebaik sahaja pesanan diserahkan",
+  "viewEarnings": "Lihat pendapatan →",
+  "todayEarned": "Pendapatan hari ini: {amount}",
+  "@todayEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "availableToWithdraw": "Tersedia untuk dikeluarkan: {amount}",
+  "@availableToWithdraw": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moreQueued": "{count} lagi dalam barisan",
+  "@moreQueued": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "errStatus": "Status anda tidak dapat ditukar",
+  "demoCreated": "Pesanan demo {code} telah dicipta · Kod penghantaran {demoCode}",
+  "@demoCreated": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "demoCode": {
+        "type": "String"
+      }
+    }
+  },
+  "errDemo": "Pesanan demo tidak dapat dicipta"
+}

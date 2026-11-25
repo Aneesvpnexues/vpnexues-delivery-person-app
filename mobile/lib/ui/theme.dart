@@ -91,3 +91,105 @@ ThemeData buildTheme() {
   );
 }
 
+ThemeData buildDarkTheme() {
+  const background = Color(0xFF101812);
+  const surface = Color(0xFF1B2720);
+  const primary = Color(0xFF9BCB78);
+  const textPrimary = Color(0xFFF1F5EF);
+  const textSecondary = Color(0xFFB0BDB3);
+  const border = Color(0xFF35443A);
+
+  final scheme = ColorScheme.fromSeed(
+    seedColor: C.green,
+    brightness: Brightness.dark,
+  ).copyWith(
+    primary: primary,
+    onPrimary: const Color(0xFF142018),
+    secondary: C.yellow,
+    onSecondary: const Color(0xFF142018),
+    surface: surface,
+    onSurface: textPrimary,
+    error: const Color(0xFFFF7777),
+    outline: border,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: scheme,
+    fontFamily: 'Inter',
+    scaffoldBackgroundColor: background,
+    cardColor: surface,
+    dividerColor: border,
+
+    appBarTheme: const AppBarTheme(
+      backgroundColor: background,
+      foregroundColor: textPrimary,
+      elevation: 0,
+      titleTextStyle: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+      ),
+    ),
+
+    textTheme: const TextTheme(
+      bodyMedium: TextStyle(
+        fontFamily: 'Inter',
+        color: textPrimary,
+      ),
+      bodyLarge: TextStyle(
+        fontFamily: 'Inter',
+        color: textPrimary,
+      ),
+    ),
+
+    inputDecorationTheme: const InputDecorationTheme(
+      filled: false,
+      fillColor: Colors.transparent,
+      isDense: true,
+      contentPadding: EdgeInsets.zero,
+      border: InputBorder.none,
+      enabledBorder: InputBorder.none,
+      focusedBorder: InputBorder.none,
+      disabledBorder: InputBorder.none,
+      errorBorder: InputBorder.none,
+      focusedErrorBorder: InputBorder.none,
+    ),
+
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: surface,
+      contentTextStyle: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 13,
+        color: textPrimary,
+      ),
+      behavior: SnackBarBehavior.floating,
+    ),
+
+    dialogTheme: const DialogThemeData(
+      backgroundColor: surface,
+      titleTextStyle: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+      ),
+      contentTextStyle: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 14,
+        color: textSecondary,
+      ),
+    ),
+
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: surface,
+      surfaceTintColor: Colors.transparent,
+    ),
+
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: primary,
+    ),
+  );
+}

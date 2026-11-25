@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../l10n/generated/app_localizations.dart';
+
 const double kDesignW = 412;
 const double kDesignH = 915;
 const double kBottomSlack = 30;
@@ -62,9 +64,9 @@ class DesignCanvas extends StatelessWidget {
       final top = desk
           ? math.max(0.0, (c.maxHeight - h) / 2)
           : math.max(0.0, (c.maxHeight - (kDesignH - kBottomSlack) * s) / 2);
-      final bg = background ?? C.bg;
+      final bg = background ?? Theme.of(context).scaffoldBackgroundColor;
       return ColoredBox(
-        color: desk ? const Color(0xFFE9ECE4) : bg,
+        color: desk ? Theme.of(context).colorScheme.surfaceContainer : bg,
         child: Stack(
           children: [
             Positioned(
@@ -164,7 +166,7 @@ class DTxt extends StatelessWidget {
     this.w = 372,
     this.s = 13,
     this.wt = FontWeight.w400,
-    this.c = C.ink,
+    this.c,
     this.lh,
     this.align = TextAlign.left,
     this.ls,
@@ -179,7 +181,7 @@ class DTxt extends StatelessWidget {
   final double w;
   final double s;
   final FontWeight wt;
-  final Color c;
+  final Color? c;
   final double? lh;
   final TextAlign align;
   final double? ls;
@@ -205,7 +207,7 @@ class DTxt extends StatelessWidget {
             fontFamily: 'Inter',
             fontSize: s,
             fontWeight: wt,
-            color: c,
+            color: c ?? Theme.of(context).colorScheme.onSurface,
             height: lh == null ? 1.35 : lh! / s,
             letterSpacing: ls,
           ),
@@ -353,6 +355,7 @@ class BackBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Stack(
       children: [
         Positioned(
@@ -374,7 +377,7 @@ class BackBar extends StatelessWidget {
         if (title != null)
           DTxt(title!, x: 80, y: 51, w: 246, s: 20, wt: FontWeight.w700, lh: 28),
         if (step != null)
-          DTxt('Step $step of 5', x: 325, y: 57, w: 68, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.muted, align: TextAlign.right),
+          DTxt(l.stepOf5(step!), x: 325, y: 57, w: 68, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.muted, align: TextAlign.right),
         if (right != null) right!,
       ],
     );
@@ -398,12 +401,12 @@ class RoundBtn extends StatelessWidget {
       w: 48,
       h: 48,
       r: 24,
-      bg: Colors.white,
+      bg: Theme.of(context).colorScheme.surface,
       shadow: sh(4, 12, .05),
       onTap: onTap,
       child: Stack(
         children: [
-          Positioned(left: 14, top: 14, child: Icon(icon, size: 20, color: C.green)),
+          Positioned(left: 14, top: 14, child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary)),
           if (dot)
             Positioned(
               left: 29,
@@ -603,14 +606,14 @@ class OutlineButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: C.green, width: 2),
+            border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: C.green),
+            style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary),
           ),
         ),
       ),
@@ -712,20 +715,20 @@ class Field extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (label != null) ...[
-          Text(label!, style: const TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: C.ink, height: 18.2 / 13)),
+          Text(label!, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface, height: 18.2 / 13)),
           const SizedBox(height: 8),
         ],
         Container(
           height: h,
           padding: const EdgeInsets.symmetric(horizontal: 17),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: ok ? const Color(0xFF81C895) : C.line),
+            border: Border.all(color: ok ? const Color(0xFF81C895) : Theme.of(context).dividerColor),
           ),
           child: Row(
             children: [
-              if (icon != null) ...[Icon(icon, size: 18, color: C.muted), const SizedBox(width: 11)],
+              if (icon != null) ...[Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant), const SizedBox(width: 11)],
               Expanded(
                 child: TextField(
                   controller: controller,
@@ -733,8 +736,8 @@ class Field extends StatelessWidget {
                   onTap: onTap,
                   obscureText: obscure,
                   keyboardType: keyboard,
-                  cursorColor: C.green,
-                  style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: C.ink),
+                  cursorColor: Theme.of(context).colorScheme.primary,
+                  style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
                   decoration: InputDecoration(
                     isDense: true,
                     filled: false,
@@ -774,8 +777,22 @@ class BottomNav extends StatelessWidget {
     ('profile', 'Profile', LucideIcons.user),
   ];
 
+  static String _label(AppLocalizations l, String key) {
+    switch (key) {
+      case 'orders':
+        return l.navOrders;
+      case 'earnings':
+        return l.navEarnings;
+      case 'profile':
+        return l.navProfile;
+      default:
+        return l.navHome;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return DBox(
       x: 20,
       y: 816,
@@ -806,7 +823,7 @@ class BottomNav extends StatelessWidget {
                       Icon(tabs[i].$3, size: 20, color: tabs[i].$1 == active ? C.yellow : const Color(0xFFCEE3D0)),
                       const SizedBox(height: 4),
                       Text(
-                        tabs[i].$2,
+                        _label(l, tabs[i].$1),
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
@@ -832,9 +849,10 @@ class Steps extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Stack(
       children: [
-        DTxt('Step $step of 5', x: 325, y: 57, w: 68, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.muted, align: TextAlign.right),
+        DTxt(l.stepOf5(step), x: 325, y: 57, w: 68, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.muted, align: TextAlign.right),
         for (var i = 0; i < 5; i++)
           DBox(
             x: 20 + i * 76.0,
@@ -870,7 +888,7 @@ class Modal extends StatelessWidget {
               width: w,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .25), blurRadius: 60, offset: const Offset(0, 24))],
               ),
@@ -894,7 +912,7 @@ void showToast(BuildContext context, String message) {
           message,
           style: const TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
         ),
-        backgroundColor: C.green,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

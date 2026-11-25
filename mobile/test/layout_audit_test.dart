@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:vpnexues_partner/core/api_client.dart';
+import 'package:vpnexues_partner/l10n/generated/app_localizations.dart';
 import 'package:vpnexues_partner/screens/about_screen.dart';
 import 'package:vpnexues_partner/screens/add_payout_screen.dart';
 import 'package:vpnexues_partner/screens/bank_screen.dart';
@@ -159,7 +160,11 @@ void main() {
       tester.view.physicalSize = const Size(_w, _h);
       tester.view.devicePixelRatio = 1.0;
 
-      await tester.pumpWidget(MaterialApp(home: entry.value(state)));
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: const [AppLocalizations.delegate],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: entry.value(state),
+      ));
       await tester.pump(const Duration(milliseconds: 30));
       await tester.pump(const Duration(milliseconds: 120));
       await tester.pump(const Duration(milliseconds: 400));

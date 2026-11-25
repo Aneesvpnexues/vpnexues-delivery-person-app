@@ -1,7 +1,6 @@
-
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import '../core/api_client.dart';
 import '../core/format.dart';
@@ -26,10 +25,9 @@ class AppState extends ChangeNotifier {
   Map<String, dynamic>? partner;
   Map<String, dynamic> settings = {};
 
-  // List<Map<String, dynamic>> cities = [];
-
-  // bool citiesLoading = false;
-  // bool citiesFailed = false;
+  List<Map<String, dynamic>> cities = [];
+  bool citiesLoading = false;
+  bool citiesFailed = false;
 
   int unread = 0;
 
@@ -42,21 +40,92 @@ class AppState extends ChangeNotifier {
 
   String get name => asString(partner?['fullName'], 'Partner');
 
-  String get kycStatus =>
-      asString(partner?['kycStatus'], 'not_started');
+  String get kycStatus => asString(partner?['kycStatus'], 'not_started');
 
   /// Signup draft stored locally.
-  Map<String, dynamic> get signupDraft =>
-      api.getSignupDraft() ?? {};
+  Map<String, dynamic> get signupDraft => api.getSignupDraft() ?? {};
 
-  Future<void> saveSignupDraft(
-    Map<String, dynamic> draft,
-  ) {
+  Future<void> saveSignupDraft(Map<String, dynamic> draft) {
     return api.saveSignupDraft(draft);
   }
 
   Future<void> saveLoginPhone(String phone) {
     return api.saveLoginPhone(phone);
+  }
+
+  // --------------------------------------------------
+  // DARK MODE
+  // --------------------------------------------------
+
+  /// Returns true when Dark Mode is enabled.
+  ///
+  /// The preference is stored in partner settings
+  /// under the key 'darkModeAtNight'.
+  bool get isDarkMode => asBool(settings['darkModeAtNight']);
+
+  // --------------------------------------------------
+  // LOCALIZATION TEST MODE
+  // --------------------------------------------------
+
+  // Temporary test-mode identifier.
+  bool get isLocalizationTestMode => partner?['id'] == 999;
+
+  // --------------------------------------------------
+  // APP LANGUAGE / LOCALE
+  // --------------------------------------------------
+
+  /// Normal app mode:
+  /// Read the saved language from the backend partner profile.
+  ///
+  /// Localization test mode:
+  /// Read the temporary language from local settings.
+  ///
+  /// Supported backend languages:
+  /// en, ta, hi, ml, te, kn
+  Locale get locale {
+    final String lang = isLocalizationTestMode
+        ? asString(settings['language'], 'en')
+        : asString(partner?['language'], 'en');
+
+    switch (lang) {
+      case 'en':
+        return const Locale('en');
+
+      case 'ta':
+        return const Locale('ta');
+
+      case 'hi':
+        return const Locale('hi');
+
+      case 'ml':
+        return const Locale('ml');
+
+      case 'te':
+        return const Locale('te');
+
+      case 'kn':
+        return const Locale('kn');
+
+      default:
+        return const Locale('en');
+    }
+  }
+
+  // --------------------------------------------------
+  // LOCAL SETTINGS UPDATE
+  // --------------------------------------------------
+
+  /// Updates settings locally without calling the backend.
+  /// Used for temporary localization testing and local UI updates.
+  void updateLocalSettings(Map<String, dynamic> patch) {
+    settings = {
+      ...settings,
+      ...patch,
+    };
+
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   // --------------------------------------------------
@@ -71,7 +140,7 @@ class AppState extends ChangeNotifier {
     booting = true;
 
     // Cities must never block authentication.
-    // unawaited(loadCities());
+    unawaited(loadCities());
 
     try {
       // Temporary dev mode: no server calls during splash → home screen.
@@ -98,35 +167,33 @@ class AppState extends ChangeNotifier {
   // CITIES
   // --------------------------------------------------
 
-  //Future<void> loadCities() async {
-  //   if (citiesLoading) return;
+  Future<void> loadCities() async {
+    if (citiesLoading) return;
 
-  //   citiesLoading = true;
-  //   citiesFailed = false;
+    citiesLoading = true;
+    citiesFailed = false;
 
-  //   if (!_disposed) {
-  //     notifyListeners();
-  //   }
+    if (!_disposed) {
+      notifyListeners();
+    }
 
-  //   try {
-  //     final result = await api.get('/v1/cities');
+    try {
+      cities = mapList(await api.get('/v1/cities'));
+      citiesFailed = cities.isEmpty;
+    } catch (e) {
+      citiesFailed = true;
+      debugPrint('Cities loading failed: $e');
+    } finally {
+      citiesLoading = false;
 
-  //     cities = mapList(result);
-  //     citiesFailed = cities.isEmpty;
-  //   } catch (e) {
-  //     citiesFailed = true;
-  //     debugPrint('Cities loading failed: $e');
-  //   } finally {
-  //     citiesLoading = false;
-
-  //     if (!_disposed) {
-  //       notifyListeners();
-  //     }
-  //   }
-  // }
+      if (!_disposed) {
+        notifyListeners();
+      }
+    }
+  }
 
   // --------------------------------------------------
-  // PROFILE / AUTHENTICATION
+  // LOAD PARTNER DETAILS AND SETTINGS
   // --------------------------------------------------
 
   Future<void> loadMe() async {
@@ -159,6 +226,10 @@ class AppState extends ChangeNotifier {
       debugPrint('Settings loading failed: $e');
     }
   }
+
+  // --------------------------------------------------
+  // NOTIFICATIONS
+  // --------------------------------------------------
 
   Future<void> refreshUnread() async {
     try {
@@ -338,8 +409,7 @@ class AppState extends ChangeNotifier {
       body: {'online': value},
     );
 
-    partner?['isOnline'] =
-        res is Map ? res['online'] : value;
+    partner?['isOnline'] = res is Map ? res['online'] : value;
 
     if (!_disposed) {
       notifyListeners();
@@ -347,9 +417,11 @@ class AppState extends ChangeNotifier {
   }
 
   // --------------------------------------------------
-  // SETTINGS
+  // SAVE SETTINGS
   // --------------------------------------------------
 
+  /// Saves preferences to the backend settings endpoint.
+  /// Do not use this method to save the application language.
   Future<void> saveSettings(
     Map<String, dynamic> patch,
   ) async {
@@ -360,7 +432,10 @@ class AppState extends ChangeNotifier {
 
     settings = res is Map
         ? Map<String, dynamic>.from(res)
-        : settings;
+        : {
+            ...settings,
+            ...patch,
+          };
 
     if (!_disposed) {
       notifyListeners();
@@ -368,9 +443,10 @@ class AppState extends ChangeNotifier {
   }
 
   // --------------------------------------------------
-  // PROFILE
+  // SAVE PROFILE
   // --------------------------------------------------
 
+  /// Updates partner profile fields, including application language.
   Future<void> saveProfile(
     Map<String, dynamic> patch,
   ) async {

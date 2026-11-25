@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../core/format.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
 import 'about_screen.dart';
@@ -24,10 +25,10 @@ class ProfileTab extends StatefulWidget {
 }
 
 class _ProfileTabState extends State<ProfileTab> {
-  final List<Map<String, dynamic>> _methods = [];
-  final Map<String, dynamic>? _vehicle = null;
-  final int _missing = 0;
-  final int _expiring = 0;
+  List<Map<String, dynamic>> _methods = [];
+  Map<String, dynamic>? _vehicle;
+  int _missing = 0;
+  int _expiring = 0;
   bool _out = false;
 
   @override
@@ -37,7 +38,27 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _load() async {
-    // Temporary dev mode: no server calls from splash to home screen.
+    try {
+      final res = await Future.wait([
+        widget.state.api.get('/v1/payout-methods'),
+        widget.state.api.get('/v1/vehicle'),
+        widget.state.api.get('/v1/documents'),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _methods = mapList(res[0]);
+        _vehicle = res[1] is Map
+            ? Map<String, dynamic>.from(res[1] as Map)
+            : null;
+        final docs = res[2] is Map
+            ? Map<String, dynamic>.from(res[2] as Map)
+            : const <String, dynamic>{};
+        _missing = mapList(docs['missing']).length;
+        _expiring = mapList(docs['documents'])
+            .where((d) => asBool(d['expiringSoon']))
+            .length;
+      });
+    } catch (_) {}
   }
 
   Future<void> _push(Widget screen) async {
@@ -45,21 +66,36 @@ class _ProfileTabState extends State<ProfileTab> {
     _load();
   }
 
-  static const _kyc = {
-    'verified': ('KYC verified', Color(0xFFDFEE91)),
-    'in_review': ('KYC in review', Color(0xFFFFE08A)),
-    'not_started': ('KYC not started', Color(0xFFFFD0C8)),
-    'rejected': ('KYC needs attention', Color(0xFFFFD0C8)),
+  static const _kycColors = {
+    'verified': Color(0xFFDFEE91),
+    'in_review': Color(0xFFFFE08A),
+    'not_started': Color(0xFFFFD0C8),
+    'rejected': Color(0xFFFFD0C8),
   };
+
+  static String _kycLabel(AppLocalizations l, String status) {
+    switch (status) {
+      case 'verified':
+        return l.kycVerified;
+      case 'in_review':
+        return l.kycInReview;
+      case 'rejected':
+        return l.kycNeedsAttention;
+      default:
+        return l.kycNotStarted;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final me = widget.state.partner ?? {};
-    final kyc = _kyc[asString(me['kycStatus'], 'not_started')] ?? _kyc['not_started']!;
+    final kycStatus = asString(me['kycStatus'], 'not_started');
+    final kycColor = _kycColors[kycStatus] ?? _kycColors['not_started']!;
     final primary = _methods.where((m) => asBool(m['isPrimary'])).toList();
     final method = primary.isNotEmpty ? primary.first : (_methods.isNotEmpty ? _methods.first : null);
     final methodText = method == null
-        ? 'Not added'
+        ? l.notAdded
         : asString(method['type']) == 'upi'
             ? asString(method['upiVpa'])
             : '${asString(method['bankName'], 'Bank')} ••${asString(method['accountLast4'])}';
@@ -101,7 +137,7 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
             ),
           ),
-          const DTxt('Profile', x: 20, y: 63, s: 20, wt: FontWeight.w700, lh: 28, c: Colors.white),
+          DTxt(l.profileTitle, x: 20, y: 63, s: 20, wt: FontWeight.w700, lh: 28, c: Colors.white),
           DBox(
             x: 344,
             y: 52,
@@ -154,7 +190,7 @@ class _ProfileTabState extends State<ProfileTab> {
             maxLines: 1,
           ),
           DTxt(
-            'Partner ID ${asString(me['partnerCode'])} · ${hub.isNotEmpty ? hub : city}',
+            l.partnerId(asString(me['partnerCode']), hub.isNotEmpty ? hub : city),
             x: 106,
             y: 141,
             w: 290,
@@ -163,7 +199,7 @@ class _ProfileTabState extends State<ProfileTab> {
             c: const Color(0xFFDFEEE0),
             maxLines: 1,
           ),
-          Pill(x: 106, y: 164, label: kyc.$1, bg: const Color(0x21FFFFFF), fg: kyc.$2),
+          Pill(x: 106, y: 164, label: _kycLabel(l, kycStatus), bg: const Color(0x21FFFFFF), fg: kycColor),
           for (var i = 0; i < 3; i++)
             DBox(
               x: 20 + i * 127.0,
@@ -185,80 +221,82 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    ['Rating', 'Deliveries', 'Partner since'][i],
+                    [l.statRating, l.statDeliveries, l.statPartnerSince][i],
                     style: const TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFFDFEEE0)),
                   ),
                 ],
               ),
             ),
 
-          const DTxt('ACCOUNT', x: 20, y: 299, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.accent, ls: 1.2),
+          DTxt(l.secAccount, x: 20, y: 299, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.accent, ls: 1.2),
           _Rows(
             y: 324,
             h: 54,
             rows: [
               _Row(
                 icon: LucideIcons.user,
-                title: 'Personal info',
+                title: l.personalInfoTitle,
                 onTap: () => _push(PersonalInfoScreen(state: widget.state)),
               ),
               _Row(
                 icon: LucideIcons.fileText,
-                title: 'Documents',
+                title: l.documentsTitle,
                 right: _missing > 0
-                    ? _pill('$_missing to upload')
+                    ? _pill(l.docsToUpload(_missing))
                     : _expiring > 0
-                        ? _pill('$_expiring expiring')
+                        ? _pill(l.docsExpiring(_expiring))
                         : null,
                 onTap: () => _push(DocsScreen(state: widget.state)),
               ),
               _Row(
                 icon: LucideIcons.landmark,
-                title: 'Bank & UPI',
+                title: l.bankTitle,
                 value: methodText,
                 onTap: () => _push(BankScreen(state: widget.state)),
               ),
               _Row(
                 icon: LucideIcons.bike,
-                title: 'Vehicle',
-                value: _vehicle == null ? 'Not added' : asString(_vehicle['registrationNumber'], 'Not added'),
+                title: l.vehicleTitle,
+                value: _vehicle == null
+                    ? l.notAdded
+                    : asString(_vehicle!['registrationNumber'], l.notAdded),
                 onTap: () => _push(VehicleScreen(state: widget.state)),
               ),
             ],
           ),
-          const DTxt('APP & SUPPORT', x: 20, y: 556, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.accent, ls: 1.2),
+          DTxt(l.secAppSupport, x: 20, y: 556, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.accent, ls: 1.2),
           _Rows(
             y: 581,
             h: 46,
             rows: [
               _Row(
                 icon: LucideIcons.globe,
-                title: 'Language',
+                title: l.languageTitle,
                 value: asString(me['language'], 'en'),
-                onTap: () => _push(SettingsScreen(state: widget.state)),
+                onTap: () => _push(LanguageScreen(state: widget.state)),
               ),
               _Row(
                 icon: LucideIcons.messageCircle,
-                title: 'Help & support',
+                title: l.helpSupport,
                 onTap: () => _push(SupportScreen(state: widget.state)),
               ),
               _Row(
                 icon: LucideIcons.alertTriangle,
                 tile: const Color(0xFFFDE0DD),
                 ic: const Color(0xFFC92526),
-                title: 'SOS & emergency contacts',
+                title: l.sosContacts,
                 onTap: () => _push(SosScreen(state: widget.state)),
               ),
               _Row(
                 icon: LucideIcons.info,
-                title: 'About VP Nexues',
+                title: l.aboutApp,
                 onTap: () => _push(AboutScreen(state: widget.state)),
               ),
               _Row(
                 icon: LucideIcons.logOut,
                 tile: const Color(0xFFFDE0DD),
                 ic: const Color(0xFFC92526),
-                title: 'Log out',
+                title: l.logoutRow,
                 onTap: () => setState(() => _out = true),
               ),
             ],
@@ -276,25 +314,25 @@ class _ProfileTabState extends State<ProfileTab> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Log out?',
-                      style: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w700, color: C.ink)),
+                  Text(l.logoutTitle,
+                      style: const TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w700, color: C.ink)),
                   const SizedBox(height: 6),
-                  const Text('You’ll stop receiving new orders until you log in again.',
-                      style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: C.muted, height: 19 / 13)),
+                  Text(l.logoutBody,
+                      style: const TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: C.muted, height: 19 / 13)),
                   const SizedBox(height: 20),
                   Btn(
                     w: 324,
                     h: 48,
                     kind: BtnKind.danger,
                     icon: LucideIcons.logOut,
-                    label: 'LOG OUT',
+                    label: l.logoutBtn,
                     onTap: () async {
                       setState(() => _out = false);
                       await widget.state.logout();
                     },
                   ),
                   const SizedBox(height: 10),
-                  Btn(w: 324, h: 48, kind: BtnKind.outline, label: 'CANCEL', onTap: () => setState(() => _out = false)),
+                  Btn(w: 324, h: 48, kind: BtnKind.outline, label: l.cancelBtn, onTap: () => setState(() => _out = false)),
                 ],
               ),
             ),

@@ -1,0 +1,215 @@
+
+{
+  "@@locale": "kn",
+  "navHome": "ಮುಖಪುಟ",
+  "navOrders": "ಆರ್ಡರ್‌ಗಳು",
+  "navEarnings": "ಗಳಿಕೆ",
+  "navProfile": "ಪ್ರೊಫೈಲ್",
+  "stepOf5": "5 ರಲ್ಲಿ ಹಂತ {step}",
+  "@stepOf5": {
+    "placeholders": {
+      "step": {
+        "type": "num"
+      }
+    }
+  },
+  "languageTitle": "ಭಾಷೆ",
+  "langDefault": "ಡೀಫಾಲ್ಟ್",
+  "langEn": "ಇಂಗ್ಲಿಷ್",
+  "langTa": "ತಮಿಳು",
+  "langSi": "ಸಿಂಹಳ",
+  "notAdded": "ಸೇರಿಸಲಾಗಿಲ್ಲ",
+  "statusAssigned": "ಹೊಸ ಆರ್ಡರ್",
+  "statusAccepted": "ಸ್ವೀಕರಿಸಲಾಗಿದೆ",
+  "statusAtPickup": "ಪಿಕಪ್ ಸ್ಥಳದಲ್ಲಿದೆ",
+  "statusPickedUp": "ಪಿಕಪ್ ಮಾಡಲಾಗಿದೆ",
+  "statusArrived": "ತಲುಪಿದೆ",
+  "statusDelivered": "ವಿತರಿಸಲಾಗಿದೆ",
+  "statusCancelled": "ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ",
+  "settingsTitle": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
+  "secDeliveries": "ವಿತರಣೆಗಳು",
+  "autoAcceptTitle": "ಹತ್ತಿರದ ಆರ್ಡರ್‌ಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಸ್ವೀಕರಿಸಿ",
+  "autoAcceptSub": "ನಿಮ್ಮ ಸ್ಥಳದಿಂದ 2 ಕಿ.ಮೀ ಒಳಗೆ",
+  "zoneTitle": "ನಗರ, ಹಬ್ ಮತ್ತು ವಿತರಣಾ ಪ್ರದೇಶ",
+  "noHub": "ಯಾವುದೇ ಹಬ್ ಇಲ್ಲ",
+  "navTitle": "ನ್ಯಾವಿಗೇಶನ್",
+  "navInApp": "ಆ್ಯಪ್‌ನಲ್ಲಿರುವ ನಕ್ಷೆಗಳು",
+  "navGoogleMaps": "Google Maps · ಹಂತ ಹಂತದ ಮಾರ್ಗದರ್ಶನ",
+  "secAlerts": "ಎಚ್ಚರಿಕೆಗಳು",
+  "newOrderSoundTitle": "ಹೊಸ ಆರ್ಡರ್ ಧ್ವನಿ",
+  "newOrderSoundSub": "ಸೈಲೆಂಟ್ ಮೋಡ್‌ನಲ್ಲಿಯೂ ಧ್ವನಿ ಬರುತ್ತದೆ",
+  "payoutAlertsTitle": "ಪಾವತಿ ಮತ್ತು ಬೋನಸ್ ಎಚ್ಚರಿಕೆಗಳು",
+  "offersTitle": "ಆಫರ್‌ಗಳು ಮತ್ತು ಅಭಿಯಾನಗಳು",
+  "secApp": "ಆ್ಯಪ್",
+  "darkModeTitle": "ರಾತ್ರಿ ಪಾಳಿಗಾಗಿ ಡಾರ್ಕ್ ಮೋಡ್",
+  "dataSaverTitle": "ಡೇಟಾ ಉಳಿತಾಯ",
+  "dataSaverSub": "3G / ದುರ್ಬಲ ಸಿಗ್ನಲ್‌ನಲ್ಲಿ ಹಗುರವಾದ ನಕ್ಷೆಗಳು",
+  "secSecurity": "ಭದ್ರತೆ",
+  "changePasswordTitle": "ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾಯಿಸಿ",
+  "fingerprintTitle": "ಫಿಂಗರ್‌ಪ್ರಿಂಟ್ ಮೂಲಕ ಅನ್‌ಲಾಕ್ ಮಾಡಿ",
+  "loadingSettings": "ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ…",
+  "errLoadSettings": "ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+  "errSaveSetting": "ಈ ಸೆಟ್ಟಿಂಗ್ ಅನ್ನು ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+  "appLanguageTitle": "ಆ್ಯಪ್ ಭಾಷೆ",
+  "appLanguageDesc": "ಮೆನುಗಳು, ಎಚ್ಚರಿಕೆಗಳು ಮತ್ತು ಧ್ವನಿ ಮಾರ್ಗದರ್ಶನಕ್ಕಾಗಿ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+  "voiceNavTitle": "ಅದೇ ಭಾಷೆಯಲ್ಲಿ ಧ್ವನಿ ಮಾರ್ಗದರ್ಶನ",
+  "voiceNavSub": "ಹಂತ ಹಂತದ ಸೂಚನೆಗಳು",
+  "saving": "ಉಳಿಸಲಾಗುತ್ತಿದೆ…",
+  "apply": "ಅನ್ವಯಿಸಿ",
+  "languageSetTo": "ಭಾಷೆಯನ್ನು {name} ಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ",
+  "@languageSetTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "errChangeLanguage": "ಭಾಷೆಯನ್ನು ಬದಲಾಯಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+  "profileTitle": "ಪ್ರೊಫೈಲ್",
+  "kycVerified": "KYC ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
+  "kycInReview": "KYC ಪರಿಶೀಲನೆಯಲ್ಲಿದೆ",
+  "kycNotStarted": "KYC ಪ್ರಾರಂಭವಾಗಿಲ್ಲ",
+  "kycNeedsAttention": "KYC ಕುರಿತು ಗಮನ ಹರಿಸುವ ಅಗತ್ಯವಿದೆ",
+  "partnerId": "ಪಾರ್ಟ್ನರ್ ID {code} · {place}",
+  "@partnerId": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "statRating": "ರೇಟಿಂಗ್",
+  "statDeliveries": "ವಿತರಣೆಗಳು",
+  "statPartnerSince": "ಪಾರ್ಟ್ನರ್ ಆದ ದಿನಾಂಕ",
+  "secAccount": "ಖಾತೆ",
+  "personalInfoTitle": "ವೈಯಕ್ತಿಕ ಮಾಹಿತಿ",
+  "documentsTitle": "ದಾಖಲೆಗಳು",
+  "docsToUpload": "ಅಪ್‌ಲೋಡ್ ಮಾಡಬೇಕಾದವು {count}",
+  "@docsToUpload": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "docsExpiring": "{count} ದಾಖಲೆಗಳ ಅವಧಿ ಮುಗಿಯುತ್ತಿದೆ",
+  "@docsExpiring": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "bankTitle": "ಬ್ಯಾಂಕ್ ಮತ್ತು UPI",
+  "vehicleTitle": "ವಾಹನ",
+  "secAppSupport": "ಆ್ಯಪ್ ಮತ್ತು ಸಹಾಯ",
+  "helpSupport": "ಸಹಾಯ ಮತ್ತು ಬೆಂಬಲ",
+  "sosContacts": "SOS ಮತ್ತು ತುರ್ತು ಸಂಪರ್ಕಗಳು",
+  "aboutApp": "VP Nexues ಬಗ್ಗೆ",
+  "logoutRow": "ಲಾಗ್ ಔಟ್",
+  "logoutTitle": "ಲಾಗ್ ಔಟ್ ಮಾಡಬೇಕೇ?",
+  "logoutBody": "ಮತ್ತೆ ಲಾಗ್ ಇನ್ ಆಗುವವರೆಗೆ ನಿಮಗೆ ಹೊಸ ಆರ್ಡರ್‌ಗಳು ಬರುವುದಿಲ್ಲ.",
+  "logoutBtn": "ಲಾಗ್ ಔಟ್",
+  "cancelBtn": "ರದ್ದುಮಾಡಿ",
+  "greetingMorning": "ಶುಭೋದಯ",
+  "greetingAfternoon": "ಶುಭ ಮಧ್ಯಾಹ್ನ",
+  "greetingEvening": "ಶುಭ ಸಂಜೆ",
+  "online": "ಆನ್‌ಲೈನ್",
+  "offline": "ಆಫ್‌ಲೈನ್",
+  "change": "ಬದಲಾಯಿಸಿ",
+  "newOrderPill": "ಹೊಸ ಆರ್ಡರ್ · ಸ್ವೀಕರಿಸಲು ಟ್ಯಾಪ್ ಮಾಡಿ",
+  "nextPill": "ಮುಂದಿನದು · {status}",
+  "@nextPill": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "orderOnWay": "#{code} ಸಾಗಣೆಯಲ್ಲಿದೆ",
+  "@orderOnWay": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAtHub": "#{code} ಹಬ್‌ನಲ್ಲಿ ಕಾಯುತ್ತಿದೆ",
+  "@orderAtHub": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "viewOrder": "ಆರ್ಡರ್ ವೀಕ್ಷಿಸಿ",
+  "continueBtn": "ಮುಂದುವರಿಸಿ",
+  "crates": "{count,plural, =1{{count} ಕ್ರೇಟ್} other{{count} ಕ್ರೇಟ್‌ಗಳು}}",
+  "@crates": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkingOrders": "ಆರ್ಡರ್‌ಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…",
+  "allCaughtUp": "ಎಲ್ಲವೂ ನವೀಕೃತವಾಗಿದೆ",
+  "loadingOrders": "ನಿಮ್ಮ ಆರ್ಡರ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ",
+  "noOrders": "ಸದ್ಯಕ್ಕೆ ಯಾವುದೇ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ",
+  "stayOnline": "ನಿಮ್ಮ ಪ್ರದೇಶದಲ್ಲಿ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿರಿ. ಹಬ್ ಆರ್ಡರ್‌ಗಳನ್ನು ನಿಯೋಜಿಸಿದಾಗ ಅವು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.",
+  "goOnline": "ನಿಮ್ಮ ಹಬ್‌ನಿಂದ ಆರ್ಡರ್‌ಗಳನ್ನು ಪಡೆಯಲು ಆನ್‌ಲೈನ್‌ಗೆ ಬನ್ನಿ.",
+  "creating": "ರಚಿಸಲಾಗುತ್ತಿದೆ…",
+  "createDemo": "ಡೆಮೊ ಆರ್ಡರ್ ರಚಿಸಿ (ಟ್ರಯಲ್)",
+  "thenDeliverTo": "ನಂತರ ಇಲ್ಲಿ ತಲುಪಿಸಿ",
+  "yourDaySoFar": "ಇಂದಿನ ನಿಮ್ಮ ಕೆಲಸ",
+  "deliveriesToday": "{count,plural, =1{ಇಂದು {count} ವಿತರಣೆ} other{ಇಂದು {count} ವಿತರಣೆಗಳು}}",
+  "@deliveriesToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "earningsCreditNote": "ಆರ್ಡರ್ ಹಸ್ತಾಂತರಿಸಿದ ತಕ್ಷಣ ನಿಮ್ಮ ಗಳಿಕೆ ಖಾತೆಗೆ ಜಮೆಯಾಗುತ್ತದೆ",
+  "viewEarnings": "ಗಳಿಕೆಯನ್ನು ವೀಕ್ಷಿಸಿ →",
+  "todayEarned": "ಇಂದಿನ ಗಳಿಕೆ: {amount}",
+  "@todayEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "availableToWithdraw": "ಹಿಂಪಡೆಯಲು ಲಭ್ಯವಿದೆ: {amount}",
+  "@availableToWithdraw": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moreQueued": "ಇನ್ನೂ {count} ಸರದಿಯಲ್ಲಿವೆ",
+  "@moreQueued": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "errStatus": "ನಿಮ್ಮ ಸ್ಥಿತಿಯನ್ನು ಬದಲಾಯಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+  "demoCreated": "ಡೆಮೊ ಆರ್ಡರ್ {code} ರಚಿಸಲಾಗಿದೆ · ಡೆಲಿವರಿ ಕೋಡ್ {demoCode}",
+  "@demoCreated": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "demoCode": {
+        "type": "String"
+      }
+    }
+  },
+  "errDemo": "ಡೆಮೊ ಆರ್ಡರ್ ರಚಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ"
+}

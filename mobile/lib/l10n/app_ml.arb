@@ -1,0 +1,214 @@
+{
+  "@@locale": "ml",
+  "navHome": "ഹോം",
+  "navOrders": "ഓർഡറുകൾ",
+  "navEarnings": "വരുമാനം",
+  "navProfile": "പ്രൊഫൈൽ",
+  "stepOf5": "5-ൽ {step}-ാം ഘട്ടം",
+  "@stepOf5": {
+    "placeholders": {
+      "step": {
+        "type": "num"
+      }
+    }
+  },
+  "languageTitle": "ഭാഷ",
+  "langDefault": "സ്ഥിരസ്ഥിതി",
+  "langEn": "ഇംഗ്ലീഷ്",
+  "langTa": "തമിഴ്",
+  "langSi": "സിംഹള",
+  "notAdded": "ചേർത്തിട്ടില്ല",
+  "statusAssigned": "പുതിയ ഓർഡർ",
+  "statusAccepted": "സ്വീകരിച്ചു",
+  "statusAtPickup": "പിക്കപ്പ് സ്ഥലത്ത്",
+  "statusPickedUp": "പിക്കപ്പ് ചെയ്തു",
+  "statusArrived": "എത്തി",
+  "statusDelivered": "വിതരണം ചെയ്തു",
+  "statusCancelled": "റദ്ദാക്കി",
+  "settingsTitle": "ക്രമീകരണങ്ങൾ",
+  "secDeliveries": "ഡെലിവറികൾ",
+  "autoAcceptTitle": "സമീപമുള്ള ഓർഡറുകൾ സ്വയമേവ സ്വീകരിക്കുക",
+  "autoAcceptSub": "നിങ്ങളുടെ സ്ഥാനത്തിൽ നിന്ന് 2 കി.മീ. പരിധിയിൽ",
+  "zoneTitle": "നഗരം, ഹബ്, ഡെലിവറി പരിധി",
+  "noHub": "ഹബ് ഇല്ല",
+  "navTitle": "നാവിഗേഷൻ",
+  "navInApp": "ആപ്പിലെ മാപ്പുകൾ",
+  "navGoogleMaps": "Google Maps · ഘട്ടംഘട്ടമായുള്ള വഴികാട്ടൽ",
+  "secAlerts": "അറിയിപ്പുകൾ",
+  "newOrderSoundTitle": "പുതിയ ഓർഡർ ശബ്ദം",
+  "newOrderSoundSub": "സൈലന്റ് മോഡിലും ശബ്ദിക്കും",
+  "payoutAlertsTitle": "പേയ്മെന്റ്, ബോണസ് അറിയിപ്പുകൾ",
+  "offersTitle": "ഓഫറുകളും ക്യാമ്പെയ്‌നുകളും",
+  "secApp": "ആപ്പ്",
+  "darkModeTitle": "രാത്രി ഷിഫ്റ്റിനുള്ള ഡാർക്ക് മോഡ്",
+  "dataSaverTitle": "ഡാറ്റ സേവിംഗ്",
+  "dataSaverSub": "3G / കുറഞ്ഞ സിഗ്നലിൽ ലഘുവായ മാപ്പുകൾ",
+  "secSecurity": "സുരക്ഷ",
+  "changePasswordTitle": "പാസ്‌വേഡ് മാറ്റുക",
+  "fingerprintTitle": "വിരലടയാളം ഉപയോഗിച്ച് തുറക്കുക",
+  "loadingSettings": "ക്രമീകരണങ്ങൾ ലോഡ് ചെയ്യുന്നു…",
+  "errLoadSettings": "ക്രമീകരണങ്ങൾ ലോഡ് ചെയ്യാനായില്ല",
+  "errSaveSetting": "ആ ക്രമീകരണം സംരക്ഷിക്കാനായില്ല",
+  "appLanguageTitle": "ആപ്പിന്റെ ഭാഷ",
+  "appLanguageDesc": "മെനുകൾക്കും അറിയിപ്പുകൾക്കും വോയ്സ് നാവിഗേഷനും ഭാഷ തിരഞ്ഞെടുക്കുക.",
+  "voiceNavTitle": "അതേ ഭാഷയിൽ വോയ്സ് നാവിഗേഷൻ",
+  "voiceNavSub": "ഘട്ടംഘട്ടമായുള്ള നിർദ്ദേശങ്ങൾ",
+  "saving": "സംരക്ഷിക്കുന്നു…",
+  "apply": "പ്രയോഗിക്കുക",
+  "languageSetTo": "ഭാഷ {name} ആയി സജ്ജമാക്കി",
+  "@languageSetTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "errChangeLanguage": "ഭാഷ മാറ്റാനായില്ല",
+  "profileTitle": "പ്രൊഫൈൽ",
+  "kycVerified": "KYC സ്ഥിരീകരിച്ചു",
+  "kycInReview": "KYC പരിശോധനയിലാണ്",
+  "kycNotStarted": "KYC ആരംഭിച്ചിട്ടില്ല",
+  "kycNeedsAttention": "KYC ശ്രദ്ധ ആവശ്യപ്പെടുന്നു",
+  "partnerId": "പാർട്ണർ ID {code} · {place}",
+  "@partnerId": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "statRating": "റേറ്റിംഗ്",
+  "statDeliveries": "ഡെലിവറികൾ",
+  "statPartnerSince": "പാർട്ണറായിട്ട്",
+  "secAccount": "അക്കൗണ്ട്",
+  "personalInfoTitle": "വ്യക്തിഗത വിവരങ്ങൾ",
+  "documentsTitle": "രേഖകൾ",
+  "docsToUpload": "അപ്‌ലോഡ് ചെയ്യാൻ {count}",
+  "@docsToUpload": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "docsExpiring": "{count} കാലാവധി തീരുന്നു",
+  "@docsExpiring": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "bankTitle": "ബാങ്ക്, UPI",
+  "vehicleTitle": "വാഹനം",
+  "secAppSupport": "ആപ്പും സഹായവും",
+  "helpSupport": "സഹായവും പിന്തുണയും",
+  "sosContacts": "SOS, അടിയന്തര ബന്ധങ്ങൾ",
+  "aboutApp": "VP Nexues-നെക്കുറിച്ച്",
+  "logoutRow": "ലോഗ് ഔട്ട്",
+  "logoutTitle": "ലോഗ് ഔട്ട് ചെയ്യണോ?",
+  "logoutBody": "വീണ്ടും ലോഗിൻ ചെയ്യുന്നതുവരെ പുതിയ ഓർഡറുകൾ ലഭിക്കില്ല.",
+  "logoutBtn": "ലോഗ് ഔട്ട്",
+  "cancelBtn": "റദ്ദാക്കുക",
+  "greetingMorning": "സുപ്രഭാതം",
+  "greetingAfternoon": "ശുഭദിനം",
+  "greetingEvening": "ശുഭസായാഹ്നം",
+  "online": "ഓൺലൈൻ",
+  "offline": "ഓഫ്‌ലൈൻ",
+  "change": "മാറ്റുക",
+  "newOrderPill": "പുതിയ ഓർഡർ · സ്വീകരിക്കാൻ ടാപ്പ് ചെയ്യുക",
+  "nextPill": "അടുത്തത് · {status}",
+  "@nextPill": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "orderOnWay": "#{code} യാത്രയിലാണ്",
+  "@orderOnWay": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAtHub": "#{code} ഹബ്ബിൽ കാത്തിരിക്കുന്നു",
+  "@orderAtHub": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "viewOrder": "ഓർഡർ കാണുക",
+  "continueBtn": "തുടരുക",
+  "crates": "{count,plural, =1{{count} ക്രേറ്റ്} other{{count} ക്രേറ്റുകൾ}}",
+  "@crates": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkingOrders": "ഓർഡറുകൾ പരിശോധിക്കുന്നു…",
+  "allCaughtUp": "എല്ലാം പുതുക്കിയിട്ടുണ്ട്",
+  "loadingOrders": "നിങ്ങളുടെ ഓർഡറുകൾ ലോഡ് ചെയ്യുന്നു",
+  "noOrders": "ഇപ്പോൾ ഓർഡറുകളില്ല",
+  "stayOnline": "നിങ്ങളുടെ മേഖലയ്ക്കുള്ളിൽ ഓൺലൈനായി തുടരുക. ഹബ് ഓർഡർ നൽകുമ്പോൾ അത് ഇവിടെ കാണിക്കും.",
+  "goOnline": "നിങ്ങളുടെ ഹബ്ബിൽ നിന്ന് ഓർഡറുകൾ ലഭിക്കാൻ ഓൺലൈനാകുക.",
+  "creating": "സൃഷ്ടിക്കുന്നു…",
+  "createDemo": "ഡെമോ ഓർഡർ സൃഷ്ടിക്കുക (ട്രയൽ)",
+  "thenDeliverTo": "തുടർന്ന് ഇവിടെ എത്തിക്കുക",
+  "yourDaySoFar": "ഇന്നത്തെ നിങ്ങളുടെ പ്രവർത്തനം",
+  "deliveriesToday": "{count,plural, =1{{count} ഇന്നത്തെ ഡെലിവറി} other{{count} ഇന്നത്തെ ഡെലിവറികൾ}}",
+  "@deliveriesToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "earningsCreditNote": "ഓർഡർ കൈമാറുന്ന ഉടൻ വരുമാനം ക്രെഡിറ്റ് ചെയ്യും",
+  "viewEarnings": "വരുമാനം കാണുക →",
+  "todayEarned": "ഇന്ന് ലഭിച്ചത്: {amount}",
+  "@todayEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "availableToWithdraw": "പിൻവലിക്കാൻ ലഭ്യം: {amount}",
+  "@availableToWithdraw": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moreQueued": "ക്യൂവിൽ ഇനി {count}",
+  "@moreQueued": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "errStatus": "നിങ്ങളുടെ സ്റ്റാറ്റസ് മാറ്റാനായില്ല",
+  "demoCreated": "ഡെമോ ഓർഡർ {code} സൃഷ്ടിച്ചു · ഡെലിവറി കോഡ് {demoCode}",
+  "@demoCreated": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "demoCode": {
+        "type": "String"
+      }
+    }
+  },
+  "errDemo": "ഡെമോ ഓർഡർ സൃഷ്ടിക്കാനായില്ല"
+}

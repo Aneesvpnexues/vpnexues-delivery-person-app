@@ -266,19 +266,36 @@ class _SupportScreenState extends State<SupportScreen> {
             width: 372,
             height: 319,
             child: list.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 24),
-                    child: Text(
-                      'No topics match “${_search.text.trim()}”.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500, color: C.muted, height: 20 / 13),
+                ? SizedBox(
+                    width: double.infinity,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 24),
+                      child: Text(
+                        'No topics match “${_search.text.trim()}”.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: C.muted,
+                          height: 20 / 13,
+                        ),
+                      ),
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 16),
+                    scrollDirection: Axis.vertical,
+                    padding: EdgeInsets.zero,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: ClampingScrollPhysics(),
+                    ),
                     itemCount: list.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) => _faq(list[i], _faqs.indexOf(list[i])),
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: 10),
+                    itemBuilder: (_, i) => _faq(
+                      list[i],
+                      _faqs.indexOf(list[i]),
+                    ),
                   ),
           ),
         ],
@@ -288,37 +305,91 @@ class _SupportScreenState extends State<SupportScreen> {
 
   Widget _faq((IconData, String, String) f, int index) {
     final open = _open == index;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => setState(() => _open = open ? -1 : index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: C.line, width: 1),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => setState(() => _open = open ? -1 : index),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Center(child: Icon(f.$1, size: 18, color: C.green)),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Center(
+                        child: Icon(f.$1, size: 19, color: C.green),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        f.$2,
+                        textAlign: TextAlign.left,
+                        softWrap: true,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: C.ink,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 24,
+                      height: 40,
+                      child: Center(
+                        child: Icon(
+                          open
+                              ? LucideIcons.chevronUp
+                              : LucideIcons.chevronDown,
+                          size: 17,
+                          color: const Color(0xFF8A988F),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(f.$2,
-                      style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: C.ink, height: 20 / 15)),
-                ),
-                Icon(open ? LucideIcons.chevronUp : LucideIcons.chevronDown, size: 16, color: const Color(0xFF8A988F)),
+                if (open) ...[
+                  const SizedBox(height: 8),
+                  Padding(
+                    // Start the answer exactly below the question text.
+                    padding: const EdgeInsets.only(left: 50, right: 32),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        f.$3,
+                        textAlign: TextAlign.left,
+                        softWrap: true,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12.5,
+                          color: C.muted,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
-            if (open)
-              Padding(
-                padding: const EdgeInsets.only(left: 12, top: 6),
-                child: Text(f.$3,
-                    style: const TextStyle(fontFamily: 'Inter', fontSize: 12.5, color: C.muted, height: 18 / 12.5)),
-              ),
-          ],
+          ),
         ),
       ),
     );

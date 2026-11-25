@@ -38,7 +38,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
   final _scrollController = ScrollController();
 
+  /// Name of the city currently shown in the field.
   String? _selectedCity;
+
+  /// Id of the selected city coming from `GET /v1/cities`.
+  int? _cityId;
+
   bool _pickCity = false;
 
   String _vehicle = 'Motorbike';
@@ -66,6 +71,45 @@ class _SignupScreenState extends State<SignupScreen> {
       _handleFocus(_cityFocus, _cityKey);
     });
     _refFocus.addListener(() => _handleFocus(_refFocus, _refKey));
+
+    // City list is loaded in the background and never blocks the form.
+    widget.state.addListener(_onState);
+    if (widget.state.cities.isEmpty) {
+      widget.state.loadCities();
+    }
+  }
+
+  void _onState() {
+    if (!mounted) return;
+
+    // The draft restored in [initState] may pre-date the city list, so match
+    // it as soon as `GET /v1/cities` answers.
+    if (_cityId == null) {
+      final name = _selectedCity?.trim().toLowerCase();
+      if (name != null && name.isNotEmpty) {
+        for (final c in widget.state.cities) {
+          if (c['name'].toString().trim().toLowerCase() == name) {
+            _cityId = _asCityId(c['id']);
+            break;
+          }
+        }
+      }
+    }
+
+    setState(() {});
+  }
+
+  static int? _asCityId(dynamic value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  /// The backend city currently referenced by [_cityId], if any.
+  Map<String, dynamic>? get _cityById {
+    for (final c in widget.state.cities) {
+      if (_asCityId(c['id']) == _cityId) return c;
+    }
+    return null;
   }
 
   void _handleFocus(FocusNode node, GlobalKey fieldKey) {
@@ -107,10 +151,12 @@ class _SignupScreenState extends State<SignupScreen> {
     final city = draft['cityName']?.toString() ?? '';
     _cityCtl.text = city;
     _selectedCity = city.isEmpty ? null : city;
+    _cityId = _asCityId(draft['cityId']);
   }
 
   @override
   void dispose() {
+    widget.state.removeListener(_onState);
     _name.dispose();
     _mobile.dispose();
     _ref.dispose();
@@ -123,11 +169,26 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  List<String> get _visibleCities {
+  /// Cities offered by the picker.
+  ///
+  /// Prefers the backend list (`GET /v1/cities`) so the sign-up payload can
+  /// carry a real `cityId`, and falls back to the bundled list while the API
+  /// has not answered yet or is unreachable.
+  List<Map<String, dynamic>> get _visibleCities {
+    final List<Map<String, dynamic>> source = widget.state.cities.isNotEmpty
+        ? widget.state.cities
+        : <Map<String, dynamic>>[
+            for (final name in availableCities)
+              {'id': null, 'name': name, 'state': ''},
+          ];
+
     final query = _cityCtl.text.trim().toLowerCase();
-    if (query.isEmpty) return availableCities;
-    return availableCities
-        .where((city) => city.toLowerCase().contains(query))
+    final selected = _selectedCity?.trim().toLowerCase();
+    if (query.isEmpty || query == selected) return source;
+    return source
+        .where((c) =>
+            c['name'].toString().toLowerCase().contains(query) ||
+            c['state'].toString().toLowerCase().contains(query))
         .toList();
   }
 
@@ -141,13 +202,28 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  void _pick(String city) {
+  void _pick(Map<String, dynamic> city) {
+    HapticFeedback.selectionClick();
+    FocusScope.of(context).unfocus();
+    final name = city['name'].toString();
+    setState(() {
+      _selectedCity = name;
+      _cityId = _asCityId(city['id']);
+      _cityCtl.text = name;
+      _cityCtl.selection = TextSelection.collapsed(offset: name.length);
+      _pickCity = false;
+    });
+  }
+
+  /// Accepts free text typed by the partner as a custom city.
+  void _pickQuery(String query) {
     HapticFeedback.selectionClick();
     FocusScope.of(context).unfocus();
     setState(() {
-      _selectedCity = city;
-      _cityCtl.text = city;
-      _cityCtl.selection = TextSelection.collapsed(offset: city.length);
+      _selectedCity = query;
+      _cityId = null;
+      _cityCtl.text = query;
+      _cityCtl.selection = TextSelection.collapsed(offset: query.length);
       _pickCity = false;
     });
   }
@@ -189,11 +265,35 @@ class _SignupScreenState extends State<SignupScreen> {
     HapticFeedback.mediumImpact();
     setState(() => _busy = true);
 
+    // Prefer the real sign-up endpoint so the backend owns the OTP. When the
+    // server cannot be reached (local / offline builds) fall back to the
+    // locally stored draft and the development code.
+    var serverCode = AppState.devOtpCode;
+    var usedBackend = false;
+    if (_cityId != null) {
+      try {
+        final res = await widget.state.signupStart(
+          fullName: name,
+          phone: phone,
+          cityId: _cityId!,
+          vehicleType: vehicles.firstWhere((v) => v.$1 == _vehicle).$2,
+          referralCode: _ref.text.trim(),
+        );
+        usedBackend = true;
+        final code = res['devCode']?.toString();
+        serverCode = (code == null || code.isEmpty)
+            ? AppState.devOtpCode
+            : code;
+      } catch (e) {
+        debugPrint('signupStart failed, falling back to local draft: $e');
+      }
+    }
+
     try {
       await widget.state.saveSignupDraft({
         'fullName': name,
         'phone': phone,
-        'cityId': null,
+        'cityId': _cityId,
         'cityName': city,
         'vehicleType': vehicles.firstWhere((v) => v.$1 == _vehicle).$2,
         'referralCode': _ref.text.trim(),
@@ -207,8 +307,23 @@ class _SignupScreenState extends State<SignupScreen> {
             state: widget.state,
             phone: phone,
             purpose: 'signup',
-            devCode: '123456',
-            onResend: () async => {'devCode': '123456'},
+            devCode: usedBackend ? serverCode : AppState.devOtpCode,
+            onResend: () async {
+              if (_cityId == null) {
+                return {'devCode': AppState.devOtpCode};
+              }
+              try {
+                return await widget.state.signupStart(
+                  fullName: name,
+                  phone: phone,
+                  cityId: _cityId!,
+                  vehicleType: vehicles.firstWhere((v) => v.$1 == _vehicle).$2,
+                  referralCode: _ref.text.trim(),
+                );
+              } catch (_) {
+                return {'devCode': AppState.devOtpCode};
+              }
+            },
           ),
         ),
       );
@@ -672,9 +787,15 @@ class _SignupScreenState extends State<SignupScreen> {
               if (!_pickCity) setState(() => _pickCity = true);
             },
             onChanged: (value) {
+              final typed = value.trim();
+              final current = _cityById;
+              final stillMatches = current != null &&
+                  current['name'].toString().trim().toLowerCase() ==
+                      typed.toLowerCase();
               setState(() {
                 _pickCity = true;
-                _selectedCity = value.trim().isEmpty ? null : value.trim();
+                _selectedCity = typed.isEmpty ? null : typed;
+                if (!stillMatches) _cityId = null;
               });
             },
             onSubmitted: (_) {
@@ -719,12 +840,14 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _buildCityDropdown() {
+    final st = widget.state;
     final visible = _visibleCities;
     final query = _cityCtl.text.trim();
+    final loading = st.citiesLoading && st.cities.isEmpty;
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
-      constraints: const BoxConstraints(maxHeight: 220),
+      constraints: const BoxConstraints(maxHeight: 260),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -736,6 +859,52 @@ class _SignupScreenState extends State<SignupScreen> {
         shrinkWrap: true,
         padding: EdgeInsets.zero,
         children: [
+          if (st.citiesFailed)
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
+              color: const Color(0xFFFFF7E6),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      "Couldn't refresh cities — using the saved list.",
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF8A6D3B),
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => st.loadCities(),
+                    child: const Text(
+                      'Retry',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: C.green,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (loading)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Loading cities…',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: C.muted,
+                ),
+              ),
+            ),
           for (final city in visible)
             InkWell(
               onTap: () => _pick(city),
@@ -744,27 +913,47 @@ class _SignupScreenState extends State<SignupScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 alignment: Alignment.centerLeft,
                 decoration: BoxDecoration(
-                  color: _selectedCity == city
+                  color: _selectedCity != null &&
+                          _selectedCity!.trim().toLowerCase() ==
+                              city['name'].toString().trim().toLowerCase()
                       ? const Color(0xFFEEF5DB)
                       : Colors.white,
                   border: const Border(
                     bottom: BorderSide(color: C.tint5),
                   ),
                 ),
-                child: Text(
-                  city,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: C.ink,
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        city['name'].toString(),
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: C.ink,
+                        ),
+                      ),
+                    ),
+                    if (city['state'] != null &&
+                        city['state'].toString().trim().isNotEmpty)
+                      Text(
+                        city['state'].toString(),
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: C.muted,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
           if (query.isNotEmpty)
             InkWell(
-              onTap: () => _pick(query),
+              onTap: () => _pickQuery(query),
               child: Container(
                 height: 50,
                 padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../core/api_client.dart';
 import '../core/format.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
 import 'notifications_screen.dart';
@@ -45,7 +48,10 @@ class _HomeTabState extends State<HomeTab> {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) => ZoneScreen(state: widget.state)));
       }
     } catch (e) {
-      if (mounted) showToast(context, e is ApiException ? e.message : 'Could not change your status');
+      if (mounted) {
+        showToast(context,
+            e is ApiException ? e.message : AppLocalizations.of(context).errStatus);
+      }
     }
   }
 
@@ -55,7 +61,10 @@ class _HomeTabState extends State<HomeTab> {
       final res = await widget.state.api.post('/v1/demo-order');
       final map = res is Map ? Map<String, dynamic>.from(res) : null;
       if (!mounted || map == null) return;
-      showToast(context, 'Demo order ${asString(map['orderCode'])} created · delivery code ${asString(map['demoCode'], '7391')}');
+      showToast(
+          context,
+          AppLocalizations.of(context).demoCreated(
+              asString(map['orderCode']), asString(map['demoCode'], '7391')));
       await _load();
       if (!mounted) return;
       await Navigator.of(context).push(MaterialPageRoute(
@@ -63,24 +72,51 @@ class _HomeTabState extends State<HomeTab> {
       ));
       await _load();
     } catch (e) {
-      if (mounted) showToast(context, e is ApiException ? e.message : 'Could not create a demo order');
+      if (mounted) {
+        showToast(context,
+            e is ApiException ? e.message : AppLocalizations.of(context).errDemo);
+      }
     } finally {
       if (mounted) setState(() => _creating = false);
     }
   }
 
-  String get _greeting {
+  String _greeting(AppLocalizations l) {
     final h = DateTime.now().hour;
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (h < 12) return l.greetingMorning;
+    if (h < 17) return l.greetingAfternoon;
+    return l.greetingEvening;
   }
 
-  String get _today {
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  String _today(AppLocalizations l) {
+    // Registers CLDR date symbols for every locale up front (the work is
+    // synchronous; the returned future is already completed).
+    initializeDateFormatting(l.localeName);
     final d = DateTime.now();
-    return '${days[d.weekday - 1]}, ${d.day} ${months[d.month - 1]}';
+    return DateFormat.EEEE(l.localeName).add_d().add_MMMM().format(d);
+  }
+
+  /// Status label localized for the Home screen (other screens still use
+  /// the English `statusLabel` from core/format.dart).
+  String _status(AppLocalizations l, String status) {
+    switch (status) {
+      case 'assigned':
+        return l.statusAssigned;
+      case 'accepted':
+        return l.statusAccepted;
+      case 'at_pickup':
+        return l.statusAtPickup;
+      case 'picked_up':
+        return l.statusPickedUp;
+      case 'arrived':
+        return l.statusArrived;
+      case 'delivered':
+        return l.statusDelivered;
+      case 'cancelled':
+        return l.statusCancelled;
+      default:
+        return statusLabel(status);
+    }
   }
 
   Future<void> _openOrder(Map<String, dynamic> order) async {
@@ -92,6 +128,7 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final state = widget.state;
     final partner = state.partner ?? {};
     final hub = partner['hub'] is Map ? Map<String, dynamic>.from(partner['hub'] as Map) : const <String, dynamic>{};
@@ -122,7 +159,7 @@ class _HomeTabState extends State<HomeTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _today,
+                        _today(l),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -133,7 +170,7 @@ class _HomeTabState extends State<HomeTab> {
                             color: C.muted),
                       ),
                       Text(
-                        '$_greeting,\n${firstName(state.name)}',
+                        '${_greeting(l)},\n${firstName(state.name)}',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -226,7 +263,7 @@ class _HomeTabState extends State<HomeTab> {
                 ),
                 const SizedBox(width: 5),
                 Text(
-                  online ? 'Online' : 'Offline',
+                  online ? l.online : l.offline,
                   style: const TextStyle(
                       fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, height: 19.6 / 14, color: C.ink),
                 ),
@@ -239,7 +276,7 @@ class _HomeTabState extends State<HomeTab> {
                       children: [
                         Flexible(
                           child: Text(
-                            '· ${asString(hub['name'], 'No hub').replaceAll(RegExp(r' Hub$'), '')} · ${asInt(partner['deliveryRadiusKm'], 5)} km',
+                            '· ${asString(hub['name'], l.noHub).replaceAll(RegExp(r' Hub$'), '')} · ${asInt(partner['deliveryRadiusKm'], 5)} km',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -247,7 +284,7 @@ class _HomeTabState extends State<HomeTab> {
                           ),
                         ),
                         Text(
-                          ' · Change',
+                          ' · ${l.change}',
                           maxLines: 1,
                           style: const TextStyle(
                               fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w500, height: 19.6 / 12, color: C.muted),
@@ -282,14 +319,16 @@ class _HomeTabState extends State<HomeTab> {
               x: 117,
               y: 210,
               w: 168,
-              label: next['status'] == 'assigned' ? 'New order · tap to accept' : 'Next · ${statusLabel(asString(next['status'])).toLowerCase()}',
+              label: next['status'] == 'assigned'
+                  ? l.newOrderPill
+                  : 'Next · ${_status(l, asString(next['status'])).toLowerCase()}',
               bg: const Color(0xFF356D35),
               fg: const Color(0xFFDFEE91),
             ),
             DTxt(
               (next['status'] == 'picked_up' || next['status'] == 'arrived')
-                  ? '#${asString(next['orderCode'])} is on its way'
-                  : '#${asString(next['orderCode'])} is waiting at the hub',
+                  ? l.orderOnWay(asString(next['orderCode']))
+                  : l.orderAtHub(asString(next['orderCode'])),
               x: 33,
               y: 246,
               w: 346,
@@ -335,7 +374,7 @@ class _HomeTabState extends State<HomeTab> {
                     top: 66,
                     width: 132,
                     child: Text(
-                      next['status'] == 'assigned' ? 'View order' : 'Continue',
+                      next['status'] == 'assigned' ? l.viewOrder : l.continueBtn,
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w700, color: C.green),
                     ),
@@ -345,7 +384,7 @@ class _HomeTabState extends State<HomeTab> {
                     top: 94,
                     width: 132,
                     child: Text(
-                      statusLabel(asString(next['status'])),
+                      _status(l, asString(next['status'])),
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF49622D)),
                     ),
@@ -358,7 +397,7 @@ class _HomeTabState extends State<HomeTab> {
               x: 235.75,
               y: 500.5,
               w: 132,
-              label: '${asInt(next['crateCount'])} crate${asInt(next['crateCount']) == 1 ? '' : 's'}',
+              label: l.crates(asInt(next['crateCount'])),
               bg: const Color(0xFF34825A),
               fg: Colors.white,
             ),
@@ -367,12 +406,12 @@ class _HomeTabState extends State<HomeTab> {
               x: 131,
               y: 210,
               w: 150,
-              label: _loading ? 'Checking orders…' : 'All caught up',
+              label: _loading ? l.checkingOrders : l.allCaughtUp,
               bg: const Color(0xFF356D35),
               fg: const Color(0xFFDFEE91),
             ),
             DTxt(
-              _loading ? 'Loading your orders' : 'No orders right now',
+              _loading ? l.loadingOrders : l.noOrders,
               x: 43,
               y: 244,
               w: 326,
@@ -383,9 +422,7 @@ class _HomeTabState extends State<HomeTab> {
               align: TextAlign.center,
             ),
             DTxt(
-              online
-                  ? 'Stay online inside your zone. New orders appear here the moment the hub assigns them.'
-                  : 'Go online to start receiving orders from your hub.',
+              online ? l.stayOnline : l.goOnline,
               x: 53,
               y: 280,
               w: 306,
@@ -412,7 +449,7 @@ class _HomeTabState extends State<HomeTab> {
                   h: 40,
                   fs: 12,
                   kind: BtnKind.yellow,
-                  label: _creating ? 'CREATING…' : 'CREATE A DEMO ORDER (TRIAL)',
+                  label: _creating ? l.creating : l.createDemo,
                   onTap: _creating ? null : _createDemo,
                 ),
               ),
@@ -421,15 +458,15 @@ class _HomeTabState extends State<HomeTab> {
           // secondary card
           DBox(x: 20, y: 556, w: 372, h: 157, r: 24, bg: Colors.white, shadow: sh(8, 22, .05)),
           if (next != null) ...[
-            const DTxt('Then deliver to', x: 37, y: 574, s: 16, wt: FontWeight.w700, lh: 22.4),
-            Pill(x: 240, y: 572, w: 135, label: statusLabel(asString(next['status']))),
+            DTxt(l.thenDeliverTo, x: 37, y: 574, s: 16, wt: FontWeight.w700, lh: 22.4),
+            Pill(x: 240, y: 572, w: 135, label: _status(l, asString(next['status']))),
             const Tile(x: 37, y: 609, bg: Color(0xFFFFF3BF), icon: LucideIcons.mapPin),
             DTxt(asString(next['customerName']), x: 85, y: 608, w: 210, s: 15, wt: FontWeight.w700, lh: 21),
             DTxt(asString(next['dropAddress']), x: 85, y: 629, w: 215, s: 12, lh: 16.8, c: C.muted, maxLines: 1),
             DTxt(money(asInt(next['earningPaise'])), x: 300, y: 609, w: 75, s: 17, wt: FontWeight.w700, lh: 23.8, c: C.accent, align: TextAlign.right),
             const DBox(x: 37, y: 658, w: 338, h: 1, bg: C.tint5),
             DTxt(
-              '${asDouble(next['distanceKm'])} km${asInt(next['etaMinutes']) > 0 ? ' · ${asInt(next['etaMinutes'])} min' : ''} · ${asInt(next['crateCount'])} crates${queued > 0 ? ' · $queued more queued' : ''}',
+              '${asDouble(next['distanceKm'])} km${asInt(next['etaMinutes']) > 0 ? ' · ${asInt(next['etaMinutes'])} min' : ''} · ${l.crates(asInt(next['crateCount']))}${queued > 0 ? ' · ${l.moreQueued(queued)}' : ''}',
               x: 37,
               y: 668,
               w: 338,
@@ -439,28 +476,28 @@ class _HomeTabState extends State<HomeTab> {
               c: C.muted,
             ),
           ] else ...[
-            const DTxt('Your day so far', x: 37, y: 574, s: 16, wt: FontWeight.w700, lh: 22.4),
+            DTxt(l.yourDaySoFar, x: 37, y: 574, s: 16, wt: FontWeight.w700, lh: 22.4),
             Pill(
               x: 265,
               y: 572,
               w: 110,
-              label: online ? 'Online' : 'Offline',
+              label: online ? l.online : l.offline,
               bg: online ? pillOk.bg : pillWarn.bg,
               fg: online ? pillOk.fg : pillWarn.fg,
               dot: online ? pillOk.fg : pillWarn.fg,
             ),
             const Tile(x: 37, y: 609, icon: LucideIcons.wallet),
-            DTxt('$deliveries ${deliveries == 1 ? 'delivery' : 'deliveries'} today', x: 85, y: 608, s: 15, wt: FontWeight.w700, lh: 21),
-            const DTxt('Earnings are credited the moment you hand over', x: 85, y: 629, s: 12, lh: 16.8, c: C.muted),
+            DTxt(l.deliveriesToday(deliveries), x: 85, y: 608, s: 15, wt: FontWeight.w700, lh: 21),
+            DTxt(l.earningsCreditNote, x: 85, y: 629, s: 12, lh: 16.8, c: C.muted),
             DTxt(money(net), x: 260, y: 609, w: 115, s: 17, wt: FontWeight.w700, lh: 23.8, c: C.accent, align: TextAlign.right),
             const DBox(x: 37, y: 658, w: 338, h: 1, bg: C.tint5),
-            DTxt('View earnings →', x: 37, y: 668, s: 13, wt: FontWeight.w500, lh: 18.2, c: C.green, onTap: () => widget.onOpenTab(2)),
+            DTxt(l.viewEarnings, x: 37, y: 668, s: 13, wt: FontWeight.w500, lh: 18.2, c: C.green, onTap: () => widget.onOpenTab(2)),
           ],
 
           // earnings strip
           const DBox(x: 20, y: 724, w: 372, h: 70, r: 22, bg: Color(0xFFEEF5DB)),
-          DTxt('Today: ${money(net)} earned', x: 37, y: 739, s: 14, wt: FontWeight.w700, lh: 22.4),
-          DTxt('Available to withdraw: ${money(available)}', x: 37, y: 761, w: 280, s: 11, lh: 18.2, c: C.muted),
+          DTxt(l.todayEarned(money(net)), x: 37, y: 739, s: 14, wt: FontWeight.w700, lh: 22.4),
+          DTxt(l.availableToWithdraw(money(available)), x: 37, y: 761, w: 280, s: 11, lh: 18.2, c: C.muted),
           Positioned(
             left: 330,
             top: 739,

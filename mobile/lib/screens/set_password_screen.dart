@@ -114,7 +114,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     FocusScope.of(context).unfocus();
     if (!_submittedOnce) {
       setState(() => _submittedOnce = true);
@@ -131,16 +131,35 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       return;
     }
 
-    HapticFeedback.mediumImpact();
-    showToast(context, 'Password saved');
-    if (widget.fromSettings) {
-      Navigator.of(context).pop();
-    } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => UploadDocsScreen(state: widget.state),
-        ),
+    setState(() => _busy = true);
+    try {
+      await widget.state.setPassword(_passwordController.text);
+      try {
+        await widget.state.saveSettings({
+          'fingerprintUnlock': _fingerprintEnabled,
+        });
+      } catch (_) {}
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      showToast(context, 'Password saved');
+      if (widget.fromSettings) {
+        Navigator.of(context).pop();
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => UploadDocsScreen(state: widget.state),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      HapticFeedback.lightImpact();
+      showToast(
+        context,
+        e is ApiException ? e.message : 'Could not save your password',
       );
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
   @override
