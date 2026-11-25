@@ -1,32 +1,20 @@
-# Local stack mirroring AWS: Postgres 16 (≈ RDS) + the API container.
-#   docker compose up -d db            # just the database
-#   npm run migrate                    # apply migrations/ (with DATABASE_URL in .env)
-#   docker compose up --build api      # run the production image locally
 services:
-  db:
+  postgres:
     image: postgres:16-alpine
+    container_name: vpnexues-postgres
     environment:
+      POSTGRES_DB: vpnexues
       POSTGRES_USER: vpnexues
       POSTGRES_PASSWORD: vpnexues
-      POSTGRES_DB: vpnexues
-    ports: ["5432:5432"]
-    volumes: [dbdata:/var/lib/postgresql/data]
+    ports:
+      - "5432:5432"
+    volumes:
+      - vpnexues-pg:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vpnexues"]
+      test: ["CMD-SHELL", "pg_isready -U vpnexues -d vpnexues"]
       interval: 5s
       timeout: 3s
       retries: 10
 
-  api:
-    build: .
-    depends_on:
-      db: { condition: service_healthy }
-    environment:
-      NODE_ENV: development
-      DATABASE_URL: postgres://vpnexues:vpnexues@db:5432/vpnexues
-      OTP_DEV_ECHO: "true"
-      SMS_PROVIDER: log
-    ports: ["4000:4000"]
-
 volumes:
-  dbdata:
+  vpnexues-pg:
