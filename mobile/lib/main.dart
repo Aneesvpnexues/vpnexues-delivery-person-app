@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -9,6 +10,7 @@ import 'ui/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   final prefs = await SharedPreferences.getInstance();
   final state = AppState(ApiClient(prefs));
   runApp(PartnerApp(state: state));
@@ -26,7 +28,10 @@ class PartnerApp extends StatelessWidget {
       title: 'VP Nexues Partner',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
-      home: SessionLifecycle(state: state, child: RootGate(state: state)),
+      home: SessionLifecycle(
+        state: state,
+        child: RootGate(state: state),
+      ),
     );
   }
 }

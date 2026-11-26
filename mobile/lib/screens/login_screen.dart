@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../core/api_client.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
+import 'firebase_phone_auth_screen.dart';
 import 'otp_screen.dart';
 import 'reset_password_screen.dart';
 import 'signup_screen.dart';
@@ -302,6 +303,21 @@ class _LoginScreenState extends State<LoginScreen> {
               lh: 21,
               c: C.green,
               onTap: () => showToast(context, 'Fingerprint login arrives in a later version. Use your password for now.'),
+            ),
+
+            DTxt(
+              'VERIFY WITH FIREBASE OTP',
+              x: 20,
+              y: 790,
+              w: 372,
+              s: 13,
+              wt: FontWeight.w700,
+              lh: 18.2,
+              c: C.green,
+              align: TextAlign.center,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FirebasePhoneAuthScreen()),
+              ),
             ),
 
             const DBox(x: 20, y: 820, w: 122, h: 1, bg: C.tint5),
