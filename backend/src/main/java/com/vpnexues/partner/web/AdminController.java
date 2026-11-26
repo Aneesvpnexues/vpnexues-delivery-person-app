@@ -85,7 +85,7 @@ public class AdminController {
     }
 
     @PostMapping("/orders")
-    public ResponseEntity<Map<String, Object>> createOrder(@RequestBody Dtos.OrderCreate body) {
+    public ResponseEntity<Map<String, Object>> createOrder(@Valid @RequestBody Dtos.OrderCreate body) {
         current.requireRole(current.admin(), "ops");
         return ResponseEntity.status(201).body(service.createOrder(body));
     }

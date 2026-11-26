@@ -52,8 +52,16 @@ public class PartnerService {
             args.add(email.isEmpty() ? null : email);
         }
         if (b.dateOfBirth() != null) {
+            java.time.LocalDate dob = null;
+            if (!b.dateOfBirth().isBlank()) {
+                try {
+                    dob = java.time.LocalDate.parse(b.dateOfBirth());
+                } catch (Exception e) {
+                    throw ApiException.badRequest("INVALID_DATE_OF_BIRTH", "Use YYYY-MM-DD for date of birth");
+                }
+            }
             sets.add("date_of_birth = ?");
-            args.add(b.dateOfBirth().isBlank() ? null : java.time.LocalDate.parse(b.dateOfBirth()));
+            args.add(dob);
         }
         if (b.bloodGroup() != null) {
             if (!b.bloodGroup().isBlank() && !BLOOD_GROUPS.contains(b.bloodGroup())) {

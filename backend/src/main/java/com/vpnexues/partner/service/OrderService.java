@@ -46,7 +46,9 @@ public class OrderService {
         String r = range == null ? "today" : range;
         if (!TABS.contains(t)) throw ApiException.badRequest("INVALID_TAB", "Choose active, upcoming or completed");
         if (!RANGES.contains(r)) throw ApiException.badRequest("INVALID_RANGE", "Choose today, week, month or all");
-        if (limit < 1 || limit > 100) limit = 30;
+        if (limit < 1 || limit > 100) {
+            throw ApiException.badRequest("INVALID_LIMIT", "Limit must be between 1 and 100");
+        }
 
         String where;
         String order;

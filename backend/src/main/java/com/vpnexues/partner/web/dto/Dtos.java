@@ -1,7 +1,16 @@
 package com.vpnexues.partner.web.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -61,11 +70,14 @@ public final class Dtos {
     public record InstantPayout(@NotNull Long amountPaise, String payoutMethodId) {}
 
     // ---- Orders ----
-    public record LocBody(Double lat, Double lng) {}
+    public record LocBody(@DecimalMin("-90") @DecimalMax("90") Double lat,
+                          @DecimalMin("-180") @DecimalMax("180") Double lng) {}
 
     public record ScanBody(@NotBlank String qrCode, Boolean damaged) {}
 
-    public record DeliverBody(@NotBlank String code, Double lat, Double lng) {}
+    public record DeliverBody(@NotBlank @Pattern(regexp = "\\d{4}") String code,
+                              @DecimalMin("-90") @DecimalMax("90") Double lat,
+                              @DecimalMin("-180") @DecimalMax("180") Double lng) {}
 
     public record FeedbackBody(@NotBlank String dropOffEase) {}
 
@@ -91,11 +103,25 @@ public final class Dtos {
 
     public record DocReview(@NotBlank String decision, String reason, String validUntil) {}
 
-    public record OrderCreate(String hubId, String customerName, String customerPhone, String dropAddress,
-                              Double dropLat, Double dropLng, String dropInstructions, Boolean leaveAtDoor,
-                              Double distanceKm, Integer etaMinutes, String scheduledFor, Long payBasePaise,
-                              Long payDistancePaise, Long tipPaise, List<Crate> crates, String partnerId) {
-        public record Crate(@NotBlank String label, @NotNull Integer weightGrams) {}
+    public record OrderCreate(
+            @NotBlank String hubId,
+            @NotBlank @Size(max = 120) String customerName,
+            @NotBlank @Pattern(regexp = "^\\+?[0-9]{10,15}$") String customerPhone,
+            @NotBlank @Size(max = 240) String dropAddress,
+            @NotNull @DecimalMin("-90") @DecimalMax("90") Double dropLat,
+            @NotNull @DecimalMin("-180") @DecimalMax("180") Double dropLng,
+            @Size(max = 500) String dropInstructions,
+            Boolean leaveAtDoor,
+            @NotNull @DecimalMin("0") @DecimalMax("1000") Double distanceKm,
+            @Min(1) @Max(32767) Integer etaMinutes,
+            String scheduledFor,
+            @NotNull @PositiveOrZero @Max(2147483647L) Long payBasePaise,
+            @NotNull @PositiveOrZero @Max(2147483647L) Long payDistancePaise,
+            @NotNull @PositiveOrZero @Max(2147483647L) Long tipPaise,
+            @Valid @Size(max = 50) List<Crate> crates,
+            String partnerId) {
+        public record Crate(@NotBlank @Size(max = 120) String label,
+                            @NotNull @Positive @Max(2147483647) Integer weightGrams) {}
     }
 
     public record AssignBody(@NotBlank String partnerId) {}

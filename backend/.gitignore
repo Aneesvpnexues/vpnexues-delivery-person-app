@@ -5,3 +5,11 @@ uploads/
 .pgbin/
 .pgdata/
 pg/
+
+# Local secrets and Supabase/Firebase credentials must never be committed.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*service-account*.json

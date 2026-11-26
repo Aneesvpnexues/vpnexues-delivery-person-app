@@ -1,0 +1,25 @@
+# Explicit, loopback-only development profile.
+#
+# Flyway is enabled here because this profile is intended for a disposable local
+# PostgreSQL database. MigrationSafetyEnvironmentPostProcessor rejects this
+# profile (and any spring.flyway.enabled=true setup) when the datasource URL is
+# not loopback, so it cannot be pointed at Supabase by accident.
+spring:
+  config:
+    activate:
+      on-profile: local
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/vpnexues}
+
+app:
+  migration-target: local
+  demo-seed: true
+  otp-dev-echo: true
+  trial-mode: true
+  bootstrap-admin-email: ${APP_BOOTSTRAP_ADMIN_EMAIL:owner@vpnexues.local}
+  bootstrap-admin-password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:Owner@12345}
+  bootstrap-admin-name: ${APP_BOOTSTRAP_ADMIN_NAME:Ops Owner}

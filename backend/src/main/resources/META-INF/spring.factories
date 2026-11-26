@@ -1,0 +1,3 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+com.vpnexues.partner.config.MigrationSafetyEnvironmentPostProcessor,\
+com.vpnexues.partner.config.DevelopmentSafetyEnvironmentPostProcessor

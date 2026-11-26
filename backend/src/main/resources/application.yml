@@ -18,7 +18,9 @@ spring:
       data-source-properties:
         stringtype: unspecified
   flyway:
-    enabled: true
+    # Never enable this against Supabase. The Java V1-V11 scripts are NOT
+    # equivalent to the SQL 0001-0011 migrations already applied there.
+    enabled: false
     locations: classpath:db/migration
     baseline-on-migrate: false
   servlet:
@@ -34,17 +36,18 @@ app:
   refresh-token-ttl-days: ${APP_REFRESH_TOKEN_TTL_DAYS:30}
   otp-ttl-seconds: ${APP_OTP_TTL_SECONDS:300}
   otp-max-attempts: ${APP_OTP_MAX_ATTEMPTS:5}
-  otp-dev-echo: ${APP_OTP_DEV_ECHO:true}
-  trial-mode: ${APP_TRIAL_MODE:true}
+  migration-target: ${APP_MIGRATION_TARGET:none}
+  otp-dev-echo: ${APP_OTP_DEV_ECHO:false}
+  trial-mode: ${APP_TRIAL_MODE:false}
   cors-origins: ${APP_CORS_ORIGINS:http://localhost:*,http://127.0.0.1:*,http://localhost:3000,http://localhost:8080,http://localhost:5199,http://localhost:5200}
   upload-dir: ${APP_UPLOAD_DIR:./uploads}
   public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
   instant-payout-fee-paise: ${APP_INSTANT_PAYOUT_FEE_PAISE:1000}
   instant-payout-min-paise: ${APP_INSTANT_PAYOUT_MIN_PAISE:10000}
-  bootstrap-admin-email: ${APP_BOOTSTRAP_ADMIN_EMAIL:owner@vpnexues.local}
-  bootstrap-admin-password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:Owner@12345}
+  bootstrap-admin-email: ${APP_BOOTSTRAP_ADMIN_EMAIL:}
+  bootstrap-admin-password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:}
   bootstrap-admin-name: ${APP_BOOTSTRAP_ADMIN_NAME:Ops Owner}
-  demo-seed: ${APP_DEMO_SEED:true}
+  demo-seed: ${APP_DEMO_SEED:false}
 
 logging:
   level:

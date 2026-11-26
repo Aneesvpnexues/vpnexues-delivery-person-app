@@ -13,7 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -257,23 +259,40 @@ public class AdminService {
         if (b.customerName() == null || b.customerPhone() == null || b.dropAddress() == null) {
             throw ApiException.badRequest("MISSING_FIELDS", "Customer name, phone and drop address are required");
         }
+        long base = paise(b.payBasePaise(), "payBasePaise");
+        long distancePay = paise(b.payDistancePaise(), "payDistancePaise");
+        long tip = paise(b.tipPaise(), "tipPaise");
+        Object scheduled = scheduledFor(b.scheduledFor());
+        if (b.crates() != null) {
+            for (Dtos.OrderCreate.Crate c : b.crates()) {
+                if (c == null || c.label() == null || c.label().isBlank()
+                        || c.weightGrams() == null || c.weightGrams() <= 0) {
+                    throw ApiException.badRequest("INVALID_CRATE", "Every crate needs a label and a positive weight");
+                }
+            }
+        }
         String partnerId = b.partnerId() == null ? null : uuid(b.partnerId());
-        if (partnerId != null && db.one("SELECT id FROM partners WHERE id = ?", partnerId) == null) {
-            throw ApiException.notFound("Partner");
+        if (partnerId != null) {
+            Map<String, Object> p = db.one("SELECT id, status FROM partners WHERE id = ?", partnerId);
+            if (p == null) throw ApiException.notFound("Partner");
+            if (!"active".equals(String.valueOf(p.get("status")))) {
+                throw ApiException.badRequest("PARTNER_INACTIVE", "That partner is not active");
+            }
         }
         String code = String.format("%04d", RANDOM.nextInt(10000));
         return db.inTx(() -> {
             Map<String, Object> o = db.one(
                     "INSERT INTO orders (order_code, hub_id, partner_id, status, customer_name, customer_phone, drop_address, drop_lat, drop_lng, " +
-                            "drop_instructions, leave_at_door, delivery_code_hash, distance_km, eta_minutes, pay_base_paise, pay_distance_paise, " +
-                            "tip_paise, assigned_at) VALUES ('VPN-' || lpad(nextval('order_number_seq')::text, 5, '0'), ?, ?, " +
+                            "drop_instructions, leave_at_door, delivery_code_hash, distance_km, eta_minutes, scheduled_for, " +
+                            "pay_base_paise, pay_distance_paise, tip_paise, assigned_at) " +
+                            "VALUES ('VPN-' || lpad(nextval('order_number_seq')::text, 5, '0'), ?, ?, " +
                             "CASE WHEN ?::uuid IS NULL THEN 'created'::order_status ELSE 'assigned'::order_status END, ?, ?, ?, " +
                             "COALESCE(?::double precision, 0), COALESCE(?::double precision, 0), ?, COALESCE(?::boolean, false), '', " +
-                            "COALESCE(?::numeric, 0), ?::smallint, COALESCE(?::integer, 0), COALESCE(?::integer, 0), " +
-                            "COALESCE(?::integer, 0), CASE WHEN ?::uuid IS NULL THEN NULL ELSE now() END) RETURNING id, order_code",
+                            "COALESCE(?::numeric, 0), ?::smallint, ?::timestamptz, ?, ?, ?, " +
+                            "CASE WHEN ?::uuid IS NULL THEN NULL ELSE now() END) RETURNING id, order_code",
                     hubId, partnerId, partnerId, b.customerName(), b.customerPhone(), b.dropAddress(),
                     b.dropLat(), b.dropLng(), b.dropInstructions(), b.leaveAtDoor(), b.distanceKm(), b.etaMinutes(),
-                    b.payBasePaise(), b.payDistancePaise(), b.tipPaise(), partnerId);
+                    scheduled, base, distancePay, tip, partnerId);
             String oid = o.get("id").toString();
             db.update("UPDATE orders SET delivery_code_hash = ? WHERE id = ?", Crypto.sha256(oid + ":" + code), oid);
             if (b.crates() != null) {
@@ -284,45 +303,71 @@ public class AdminService {
                     pos++;
                 }
             }
+            String actor = "admin:" + current.admin().id();
             db.update("INSERT INTO order_events (order_id, status, actor, note) VALUES (?, 'created', ?, 'Created in ops console')",
-                    oid, "admin:" + current.admin().id());
+                    oid, actor);
+            if (partnerId != null) {
+                db.update("INSERT INTO order_events (order_id, status, actor, note) VALUES (?, 'assigned', ?, 'Assigned in ops console')",
+                        oid, actor);
+            }
             audit("order.create", "order", oid, Json.map("hubId", hubId, "partnerId", partnerId));
             return Json.map("id", oid, "orderCode", o.get("orderCode"), "deliveryCode", code);
         });
     }
 
+    private static long paise(Long value, String field) {
+        long amount = value == null ? 0L : value;
+        if (amount < 0 || amount > Integer.MAX_VALUE) {
+            throw ApiException.badRequest("INVALID_AMOUNT", field + " must be between 0 and 2147483647 paise");
+        }
+        return amount;
+    }
+
+    private static Object scheduledFor(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Timestamp.from(OffsetDateTime.parse(value).toInstant());
+        } catch (Exception e) {
+            throw ApiException.badRequest("INVALID_SCHEDULE", "Use an ISO date-time with an offset");
+        }
+    }
+
     public Map<String, Object> assignOrder(String id, Dtos.AssignBody b) {
         String oid = uuid(id);
         String partnerId = uuid(b.partnerId());
-        Map<String, Object> o = db.one("SELECT id, status FROM orders WHERE id = ? FOR UPDATE", oid);
-        if (o == null) throw ApiException.notFound("Order");
-        if (!Set.of("created", "assigned").contains(String.valueOf(o.get("status")))) {
-            throw ApiException.conflict("BAD_ORDER_STATE", "Only unaccepted orders can be (re)assigned");
-        }
-        Map<String, Object> p = db.one("SELECT id, status, hub_id FROM partners WHERE id = ?", partnerId);
-        if (p == null) throw ApiException.notFound("Partner");
-        if (!"active".equals(String.valueOf(p.get("status")))) {
-            throw ApiException.badRequest("PARTNER_INACTIVE", "That partner is not active");
-        }
-        db.update("UPDATE orders SET partner_id = ?, status = 'assigned', assigned_at = now() WHERE id = ?", partnerId, oid);
-        db.update("INSERT INTO order_events (order_id, status, actor, note) VALUES (?, 'assigned', ?, 'Assigned in ops console')",
-                oid, "admin:" + current.admin().id());
-        audit("order.assign", "order", oid, Json.map("partnerId", partnerId));
-        return Json.map("id", oid, "status", "assigned", "partnerId", partnerId);
+        return db.inTx(() -> {
+            Map<String, Object> o = db.one("SELECT id, status FROM orders WHERE id = ? FOR UPDATE", oid);
+            if (o == null) throw ApiException.notFound("Order");
+            if (!Set.of("created", "assigned").contains(String.valueOf(o.get("status")))) {
+                throw ApiException.conflict("BAD_ORDER_STATE", "Only unaccepted orders can be (re)assigned");
+            }
+            Map<String, Object> p = db.one("SELECT id, status, hub_id FROM partners WHERE id = ?", partnerId);
+            if (p == null) throw ApiException.notFound("Partner");
+            if (!"active".equals(String.valueOf(p.get("status")))) {
+                throw ApiException.badRequest("PARTNER_INACTIVE", "That partner is not active");
+            }
+            db.update("UPDATE orders SET partner_id = ?, status = 'assigned', assigned_at = now() WHERE id = ?", partnerId, oid);
+            db.update("INSERT INTO order_events (order_id, status, actor, note) VALUES (?, 'assigned', ?, 'Assigned in ops console')",
+                    oid, "admin:" + current.admin().id());
+            audit("order.assign", "order", oid, Json.map("partnerId", partnerId));
+            return Json.map("id", oid, "status", "assigned", "partnerId", partnerId);
+        });
     }
 
     public Map<String, Object> cancelOrder(String id, Dtos.CancelBody b) {
         String oid = uuid(id);
-        Map<String, Object> o = db.one("SELECT id, status FROM orders WHERE id = ? FOR UPDATE", oid);
-        if (o == null) throw ApiException.notFound("Order");
-        if (Set.of("delivered", "cancelled").contains(String.valueOf(o.get("status")))) {
-            throw ApiException.conflict("BAD_ORDER_STATE", "Order is already " + o.get("status"));
-        }
-        db.update("UPDATE orders SET status = 'cancelled', cancel_reason = ?, cancelled_at = now() WHERE id = ?", b.reason(), oid);
-        db.update("INSERT INTO order_events (order_id, status, actor, note) VALUES (?, 'cancelled', ?, ?)",
-                oid, "admin:" + current.admin().id(), b.reason());
-        audit("order.cancel", "order", oid, Json.map("reason", b.reason()));
-        return Json.map("id", oid, "status", "cancelled");
+        return db.inTx(() -> {
+            Map<String, Object> o = db.one("SELECT id, status FROM orders WHERE id = ? FOR UPDATE", oid);
+            if (o == null) throw ApiException.notFound("Order");
+            if (Set.of("delivered", "cancelled").contains(String.valueOf(o.get("status")))) {
+                throw ApiException.conflict("BAD_ORDER_STATE", "Order is already " + o.get("status"));
+            }
+            db.update("UPDATE orders SET status = 'cancelled', cancel_reason = ?, cancelled_at = now() WHERE id = ?", b.reason(), oid);
+            db.update("INSERT INTO order_events (order_id, status, actor, note) VALUES (?, 'cancelled', ?, ?)",
+                    oid, "admin:" + current.admin().id(), b.reason());
+            audit("order.cancel", "order", oid, Json.map("reason", b.reason()));
+            return Json.map("id", oid, "status", "cancelled");
+        });
     }
 
     // ---------------- money ----------------

@@ -1,12 +1,17 @@
 package com.vpnexues.partner.common;
 
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.LinkedHashMap;
@@ -68,6 +73,41 @@ public class ApiErrorHandler {
         return ResponseEntity.status(404).body(Map.of("error", Map.of(
                 "code", "ROUTE_NOT_FOUND",
                 "message", "This endpoint does not exist")));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> typeMismatch(MethodArgumentTypeMismatchException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", Map.of(
+                "code", "INVALID_PARAMETER",
+                "message", "A request parameter has an invalid value")));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, Object>> missingParameter(MissingServletRequestParameterException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", Map.of(
+                "code", "MISSING_PARAMETER",
+                "message", "A required request parameter is missing")));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> unsupportedMediaType(HttpMediaTypeNotSupportedException e) {
+        return ResponseEntity.status(415).body(Map.of("error", Map.of(
+                "code", "UNSUPPORTED_MEDIA_TYPE",
+                "message", "Send a JSON request body")));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> methodNotAllowed(HttpRequestMethodNotSupportedException e) {
+        return ResponseEntity.status(405).body(Map.of("error", Map.of(
+                "code", "METHOD_NOT_ALLOWED",
+                "message", "This method is not allowed here")));
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<Map<String, Object>> database(DataAccessException e) {
+        return ResponseEntity.status(503).body(Map.of("error", Map.of(
+                "code", "DATABASE_UNAVAILABLE",
+                "message", "The service is temporarily unavailable")));
     }
 
     @ExceptionHandler(Exception.class)
