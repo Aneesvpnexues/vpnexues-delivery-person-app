@@ -1438,15 +1438,22 @@ class _SignupPrimaryButton extends StatelessWidget {
           child: Ink(
             height: 56,
             decoration: BoxDecoration(
-              gradient: kGrad,
+              gradient: const LinearGradient(
+  colors: [
+    Color(0xFF064E32), // Dark green
+    Color(0xFF0B6B43), // Slightly lighter green
+  ],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+),
               borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: C.green.withValues(alpha: 0.24),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+//               boxShadow: [
+//                 BoxShadow(
+//   color: const Color(0xFF064E32).withValues(alpha: 0.30),
+//   blurRadius: 16,
+//   offset: const Offset(0, 6),
+// ),
+//               ],
             ),
             child: InkWell(
               onTap: onTap,

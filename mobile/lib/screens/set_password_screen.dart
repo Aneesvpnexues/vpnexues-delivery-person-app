@@ -1174,7 +1174,14 @@ class _StickyPrimaryButton extends StatelessWidget {
           child: Ink(
             height: 56,
             decoration: BoxDecoration(
-              gradient: kGrad,
+              gradient: const LinearGradient(
+  colors: [
+    Color(0xFF064E32), // Dark green
+    Color(0xFF0B6B43), // Slightly lighter green
+  ],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+),
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(

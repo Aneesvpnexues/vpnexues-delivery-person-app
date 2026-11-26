@@ -25,7 +25,7 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> {
   final Map<String, dynamic>? _earnings = null;
-  final List<Map<String, dynamic>> _orders = [];
+  final List _orders = [];
   bool _loading = true;
   bool _creating = false;
 
@@ -140,6 +140,10 @@ class _HomeTabState extends State<HomeTab> {
     final deliveries = asInt(_earnings?['deliveries']);
 
     return DesignCanvas(
+      bottomNav: BottomNav(
+        active: 'home',
+        onTap: (k) => widget.onOpenTab({'home': 0, 'orders': 1, 'earnings': 2, 'profile': 3}[k] ?? 0),
+      ),
       child: Stack(
         children: [
           const Backdrop(),
@@ -509,8 +513,6 @@ class _HomeTabState extends State<HomeTab> {
               child: const Center(child: Icon(LucideIcons.star, size: 20, color: C.green)),
             ),
           ),
-
-          BottomNav(active: 'home', onTap: (k) => widget.onOpenTab({'home': 0, 'orders': 1, 'earnings': 2, 'profile': 3}[k] ?? 0)),
         ],
       ),
     );

@@ -12,3 +12,6 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Ignore Java crash and replay logs
+hs_err_pid*.log
+replay_pid*.log

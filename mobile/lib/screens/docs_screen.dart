@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -61,7 +62,7 @@ class DocsScreen extends StatefulWidget {
   static String _mon(DateTime d) =>
       const [
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
       ][d.month - 1] +
       ' ${d.year}';
 
@@ -97,7 +98,6 @@ class _DocsScreenState extends State<DocsScreen> {
   Future<void> _load() async {
     try {
       final res = await widget.state.api.get('/v1/documents');
-
       if (!mounted) return;
 
       setState(() {
@@ -108,7 +108,6 @@ class _DocsScreenState extends State<DocsScreen> {
       if (!mounted) return;
 
       setState(() => _loading = false);
-
       showToast(
         context,
         e is ApiException ? e.message : 'Could not load documents',
@@ -156,180 +155,328 @@ class _DocsScreenState extends State<DocsScreen> {
         .where((t) => t != 'selfie')
         .toList();
 
-    return DesignCanvas(
-      child: Stack(
-        children: [
-          const Backdrop(),
+    final nextType = missing.isNotEmpty ? missing.first : 'aadhaar';
 
-          const BackBar(title: 'My documents'),
-
-          RoundBtn(
-            icon: LucideIcons.plus,
-            x: 344,
-            y: 41,
-            onTap: () => _upload(
-              missing.isNotEmpty ? missing.first : 'aadhaar',
-              byType[
-                missing.isNotEmpty ? missing.first : 'aadhaar'
-              ],
+    return Scaffold(
+      backgroundColor: C.bg,
+      body: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildHeader(
+              context,
+              onAdd: () => _upload(nextType, byType[nextType]),
             ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                28 + MediaQuery.of(context).padding.bottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Status / Attention banner
+                  _buildStatusBanner(
+                    attention: attention,
+                    missing: missing,
+                    byType: byType,
+                  ),
+                  const SizedBox(height: 18),
+
+                  // 2-column responsive document grid
+                  GridView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _grid.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.82,
+                    ),
+                    itemBuilder: (_, i) => _card(i, byType[_grid[i].$1]),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Verification Dashboard card
+                  Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    child: InkWell(
+                      onTap: () => showToast(
+                        context,
+                        'Verification dashboard is coming soon',
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 15,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: C.line),
+                          boxShadow: sh(8, 20, .04),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF5DB),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                LucideIcons.layoutGrid,
+                                size: 20,
+                                color: C.green,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Verification dashboard',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: C.ink,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Status, expiry and renewals in one place',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 12,
+                                      color: C.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              LucideIcons.chevronRight,
+                              size: 16,
+                              color: Color(0xFF8A988F),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, {required VoidCallback onAdd}) {
+    final topPad = MediaQuery.of(context).padding.top;
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF083F2A), Color(0xFF1F7945)],
           ),
-
-          if (attention.isNotEmpty || missing.isNotEmpty) ...[
-            DBox(
-              x: 20,
-              y: 102,
-              w: 372,
-              h: 88,
-              r: 22,
-              bg: const Color(0xFFFFF5D9),
-              border: Border.all(
-                color: const Color(0xFFF0DC8C),
-              ),
-            ),
-
-            const Positioned(
-              left: 36,
-              top: 139,
-              child: Icon(
-                LucideIcons.alertTriangle,
-                size: 16,
-                color: Color(0xFF795109),
-              ),
-            ),
-
-            DTxt(
-              attention.isNotEmpty
-                  ? '${docLabel(asString(attention.first['type']))} ${asString(attention.first['status']) == 'rejected' ? 'was not approved' : asString(attention.first['status']) == 'expired' ? 'has expired' : 'expires soon'}. Update it to keep receiving orders.'
-                  : '${missing.length} document${missing.length == 1 ? '' : 's'} still to upload: ${missing.map(docLabel).join(', ')}.',
-              x: 64,
-              y: 117,
-              w: 215,
-              s: 13.5,
-              lh: 19.5,
-              c: const Color(0xFF795109),
-              maxLines: 3,
-            ),
-
+        ),
+        child: Stack(
+          children: [
             Positioned(
-              left: 287,
-              top: 126,
-              child: Btn(
-                w: 90,
-                h: 40,
-                fs: 13,
-                kind: BtnKind.yellow,
-                label: attention.isNotEmpty ? 'UPDATE' : 'UPLOAD',
-                onTap: () => _upload(
-                  attention.isNotEmpty
-                      ? asString(attention.first['type'])
-                      : missing.first,
-                  byType[
-                    attention.isNotEmpty
-                        ? asString(attention.first['type'])
-                        : missing.first
-                  ],
+              right: 15,
+              top: 18,
+              width: 90,
+              height: 120,
+              child: Transform.rotate(
+                angle: 25 * math.pi / 180,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0x3878B43C),
+                    borderRadius: BorderRadius.circular(65),
+                  ),
                 ),
               ),
             ),
-          ] else ...[
-            DBox(
-              x: 20,
-              y: 102,
-              w: 372,
-              h: 88,
-              r: 22,
-              bg: const Color(0xFFEEF5DB),
-              border: Border.all(
-                color: const Color(0xFFDDEBC3),
+            Padding(
+              padding: EdgeInsets.fromLTRB(20, topPad + 14, 20, 22),
+              child: Row(
+                children: [
+                  Material(
+                    color: const Color(0x24FFFFFF),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => Navigator.of(context).maybePop(),
+                      child: const SizedBox(
+                        width: 42,
+                        height: 42,
+                        child: Icon(
+                          LucideIcons.arrowLeft,
+                          size: 19,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text(
+                      'My documents',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  // Material(
+                  //   color: const Color(0x24FFFFFF),
+                  //   shape: const CircleBorder(),
+                  //   child: InkWell(
+                  //     customBorder: const CircleBorder(),
+                  //     onTap: onAdd,
+                  //     child: const SizedBox(
+                  //       width: 42,
+                  //       height: 42,
+                  //       child: Icon(
+                  //         LucideIcons.plus,
+                  //         size: 19,
+                  //         color: Colors.white,
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
 
-            const Positioned(
-              left: 36,
-              top: 139,
-              child: Icon(
-                LucideIcons.shieldCheck,
-                size: 16,
-                color: C.green,
+  Widget _buildStatusBanner({
+    required List attention,
+    required List<String> missing,
+    required Map<String, Map<String, dynamic>> byType,
+  }) {
+    if (attention.isNotEmpty || missing.isNotEmpty) {
+      final hasAttention = attention.isNotEmpty;
+      final targetType =
+          hasAttention ? asString(attention.first['type']) : missing.first;
+      final message = hasAttention
+          ? '${docLabel(targetType)} ${asString(attention.first['status']) == 'rejected' ? 'was not approved' : asString(attention.first['status']) == 'expired' ? 'has expired' : 'expires soon'}. Update it to keep receiving orders.'
+          : '${missing.length} document${missing.length == 1 ? '' : 's'} still to upload: ${missing.map(docLabel).join(', ')}.';
+
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF5D9),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFF0DC8C)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Icon(
+              LucideIcons.alertTriangle,
+              size: 18,
+              color: Color(0xFF795109),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 19 / 13,
+                  color: Color(0xFF795109),
+                ),
               ),
             ),
+            const SizedBox(width: 10),
+            ElevatedButton(
+              onPressed: () => _upload(targetType, byType[targetType]),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: C.yellow,
+                foregroundColor: const Color(0xFF3A3E34),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                minimumSize: const Size(0, 38),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(
+                hasAttention ? 'UPDATE' : 'UPLOAD',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-            DTxt(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEF5DB),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFDDEBC3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            LucideIcons.shieldCheck,
+            size: 18,
+            color: C.green,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
               _loading
                   ? 'Loading your documents…'
                   : 'All your documents are up to date.',
-              x: 64,
-              y: 125,
-              w: 300,
-              s: 13.5,
-              lh: 19.5,
-              c: C.green,
-            ),
-          ],
-
-          for (var i = 0; i < _grid.length; i++)
-            _card(i, byType[_grid[i].$1]),
-
-          // Verification Dashboard
-          // Adjusted position to prevent clipping at the bottom.
-          DBox(
-            x: 20,
-            y: 800,
-            w: 372,
-            h: 76,
-            r: 24,
-            bg: Colors.white,
-            border: Border.all(color: C.line),
-            shadow: sh(8, 20, .04),
-            onTap: () => showToast(
-              context,
-              'Verification dashboard is coming soon',
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 17),
-              child: Row(
-                children: [
-                  const Tile(
-                    s: 44,
-                    icon: LucideIcons.layoutGrid,
-                    isize: 20,
-                  ),
-
-                  const SizedBox(width: 15),
-
-                  const Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Verification dashboard',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: C.ink,
-                          ),
-                        ),
-                        Text(
-                          'Status, expiry and renewals in one place',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            color: C.muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const Icon(
-                    LucideIcons.chevronRight,
-                    size: 16,
-                    color: Color(0xFF8A988F),
-                  ),
-                ],
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: C.green,
               ),
             ),
           ),
@@ -343,25 +490,18 @@ class _DocsScreenState extends State<DocsScreen> {
     final tone = _thumbs[_grid[i].$2];
     final p = DocsScreen.pillFor(d);
 
-    final x = 20 + (i % 2) * 192.0;
-    final y = 204 + (i ~/ 2) * 201.0;
-
-    return Positioned(
-      left: x,
-      top: y,
-      width: 180,
-      height: 188,
-      child: GestureDetector(
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
         onTap: () => _upload(type, d),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.white,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: p.$2 == pillWarn.bg
-                  ? const Color(0xFFF0DC8C)
-                  : C.line,
+              color: p.$2 == pillWarn.bg ? const Color(0xFFF0DC8C) : C.line,
             ),
             boxShadow: sh(8, 20, .04),
           ),
@@ -369,7 +509,8 @@ class _DocsScreenState extends State<DocsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 84,
+                height: 82,
+                width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   gradient: LinearGradient(
@@ -392,12 +533,11 @@ class _DocsScreenState extends State<DocsScreen> {
                         ),
                       ),
                     ),
-
                     for (final t in [17.0, 27.0, 36.0])
                       Positioned(
                         left: 46,
+                        right: 14,
                         top: t,
-                        width: 101,
                         height: 3.5,
                         child: const DecoratedBox(
                           decoration: BoxDecoration(
@@ -405,7 +545,6 @@ class _DocsScreenState extends State<DocsScreen> {
                           ),
                         ),
                       ),
-
                     if (d == null)
                       const Positioned(
                         right: 10,
@@ -419,23 +558,19 @@ class _DocsScreenState extends State<DocsScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 9),
-
               Text(
                 docLabel(type),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 15,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.w700,
                   color: C.ink,
                 ),
               ),
-
-              const SizedBox(height: 5),
-
+              const SizedBox(height: 4),
               Text(
                 DocsScreen.subFor(d),
                 maxLines: 1,
@@ -446,9 +581,7 @@ class _DocsScreenState extends State<DocsScreen> {
                   color: C.muted,
                 ),
               ),
-
               const Spacer(),
-
               Pill(
                 label: p.$1,
                 bg: p.$2,

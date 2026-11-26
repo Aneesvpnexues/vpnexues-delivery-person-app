@@ -20,7 +20,7 @@ class OrdersTab extends StatefulWidget {
 class _OrdersTabState extends State<OrdersTab> {
   String _tab = 'active';
   String _range = 'today';
-  final List<Map<String, dynamic>> _items = [];
+  final List _items = [];
   bool _loading = true;
   bool _searchOpen = false;
   final _search = TextEditingController();
@@ -89,6 +89,10 @@ class _OrdersTabState extends State<OrdersTab> {
         : _items;
 
     return DesignCanvas(
+      bottomNav: BottomNav(
+        active: 'orders',
+        onTap: (k) => widget.onOpenTab({'home': 0, 'orders': 1, 'earnings': 2, 'profile': 3}[k] ?? 1),
+      ),
       child: Stack(
         children: [
           const Backdrop(),
@@ -373,11 +377,6 @@ class _OrdersTabState extends State<OrdersTab> {
                 ),
               ),
           ],
-
-          BottomNav(
-            active: 'orders',
-            onTap: (k) => widget.onOpenTab({'home': 0, 'orders': 1, 'earnings': 2, 'profile': 3}[k] ?? 1),
-          ),
         ],
       ),
     );
