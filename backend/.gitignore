@@ -17,3 +17,6 @@ desktop.ini
 .pgbin/
 .pgdata/
 pg/
+
+# Environment Variables
+.env

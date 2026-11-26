@@ -13,8 +13,13 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:vpnexues}
     password: ${SPRING_DATASOURCE_PASSWORD:vpnexues}
     hikari:
-      maximum-pool-size: ${DB_POOL_MAX:10}
-      connection-timeout: 5000
+      maximum-pool-size: ${DB_POOL_MAX:5}
+      minimum-idle: 1
+      connection-timeout: 30000
+      idle-timeout: 30000
+      max-lifetime: 120000
+      keepalive-time: 30000
+      connection-test-query: SELECT 1
       data-source-properties:
         stringtype: unspecified
   flyway:

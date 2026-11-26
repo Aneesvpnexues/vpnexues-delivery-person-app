@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart'; 
 
 import 'core/api_client.dart';
 import 'screens/root_gate.dart';
@@ -8,6 +9,10 @@ import 'ui/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 2. Initialize Firebase
+  await Firebase.initializeApp(); 
+
   final prefs = await SharedPreferences.getInstance();
   final state = AppState(ApiClient(prefs));
   runApp(PartnerApp(state: state));
