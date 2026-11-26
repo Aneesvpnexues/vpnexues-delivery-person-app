@@ -22,31 +22,12 @@ class RootGate extends StatefulWidget {
 }
 
 class _RootGateState extends State<RootGate> {
-  bool _initialized = false;
-  bool _firstTime = false;
-
   @override
   void initState() {
     super.initState();
-    _init();
-  }
-
-  Future<void> _init() async {
-    final api = widget.state.api;
-
-    // Check whether this is the first app launch.
-    final firstTime = !api.splashSeen;
-
-    if (!mounted) return;
-
-    setState(() {
-      _firstTime = firstTime;
-      _initialized = true;
-    });
-
     // Save in the background. Never block the UI.
     unawaited(
-      api.markSplashSeen().catchError((Object error) {
+      widget.state.api.markSplashSeen().catchError((Object error) {
         debugPrint('Unable to save splash preference: $error');
       }),
     );
@@ -54,43 +35,17 @@ class _RootGateState extends State<RootGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_initialized) {
-      return const SplashScreen(loading: true);
+    final state = widget.state;
+
+    // Authenticated user goes straight to HomeShell. Everyone else sees the
+    // welcome splash immediately: the boot check runs in the background, so
+    // login is never blocked by loading or API-connect errors.
+    if (state.loggedIn) {
+      return HomeShell(state: state);
     }
 
-    return AnimatedBuilder(
-      animation: widget.state,
-      builder: (context, child) {
-        final state = widget.state;
-
-        // First installation: show the welcome splash
-        // while the initial app boot is running.
-        if (_firstTime && state.booting) {
-          return const SplashScreen(loading: true);
-        }
-
-        // Returning users with a saved session:
-        // avoid displaying signup/login during session checks.
-        if (state.booting) {
-          return const Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(
-              child: CircularProgressIndicator(
-                color: C.green,
-              ),
-            ),
-          );
-        }
-
-        // Authenticated user goes directly to HomeShell.
-        if (state.loggedIn) {
-          return HomeShell(state: state);
-        }
-
-        // Unauthenticated user sees welcome screen.
-        return SplashScreen(state: state);
-      },
-    );
+    // Unauthenticated user sees welcome screen.
+    return SplashScreen(state: state);
   }
 }
 
@@ -98,11 +53,9 @@ class SplashScreen extends StatelessWidget {
   const SplashScreen({
     super.key,
     this.state,
-    this.loading = false,
   });
 
   final AppState? state;
-  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -285,22 +238,8 @@ class SplashScreen extends StatelessWidget {
 
                                 const SizedBox(height: 36),
 
-                                // Bottom CTA / loading state
-                                if (loading)
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 20),
-                                    child: Center(
-                                      child: SizedBox(
-                                        width: 40,
-                                        height: 40,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.6,
-                                          color: C.green,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                else ...[
+                                // Bottom CTA
+                                ...[
                                   _SplashPrimaryButton(
                                     label: 'GET STARTED',
                                     backgroundColor: C.yellow,

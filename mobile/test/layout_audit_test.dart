@@ -86,7 +86,6 @@ void main() {
 
     final cases = <String, Widget Function(AppState)>{
       'SplashScreen': (s) => SplashScreen(state: s),
-      'SplashScreen.loading': (s) => SplashScreen(state: s, loading: true),
       'LoginScreen': (s) => LoginScreen(state: s),
       'SignupScreen': (s) => SignupScreen(state: s),
       'OtpScreen': (s) => OtpScreen(state: s, phone: '9876543210', purpose: 'login'),

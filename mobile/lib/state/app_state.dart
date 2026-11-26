@@ -324,6 +324,26 @@ class AppState extends ChangeNotifier {
     await loadMe();
   }
 
+  /// Dev-mode login: opens a local session without calling the backend, so
+  /// the app can be used fully offline.
+  Future<void> loginLocally(String phone) async {
+    await api.setTokens({
+      'accessToken': 'dev-$phone',
+      'refreshToken': 'dev',
+    });
+
+    partner = <String, dynamic>{
+      'id': 'dev',
+      'fullName': phone,
+      'phone': phone,
+      'isOnline': true,
+    };
+
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
   // --------------------------------------------------
   // SIGNUP
   // --------------------------------------------------

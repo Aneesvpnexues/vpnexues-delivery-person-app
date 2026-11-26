@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../core/api_client.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
 import 'upload_docs.dart';
@@ -133,13 +132,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
 
     setState(() => _busy = true);
     try {
-      await widget.state.setPassword(_passwordController.text);
-      try {
-        await widget.state.saveSettings({
-          'fingerprintUnlock': _fingerprintEnabled,
-        });
-      } catch (_) {}
-      if (!mounted) return;
+      // Dev mode: skip the server call and go straight to the next page.
       HapticFeedback.mediumImpact();
       showToast(context, 'Password saved');
       if (widget.fromSettings) {
@@ -151,13 +144,6 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
           ),
         );
       }
-    } catch (e) {
-      if (!mounted) return;
-      HapticFeedback.lightImpact();
-      showToast(
-        context,
-        e is ApiException ? e.message : 'Could not save your password',
-      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
