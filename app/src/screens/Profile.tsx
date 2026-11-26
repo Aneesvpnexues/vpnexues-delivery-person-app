@@ -1,3 +1,5 @@
+// app/src/screens/Profile.tsx
+
 import { useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Activity, Bike, Camera, Check, ChevronRight, File, Globe, Landmark, Lock, LogOut, Mail, Map, MapPin, MessageCircle, Moon, Navigation, Shield, SlidersHorizontal, Star, TriangleAlert, User, Users, Volume1, Wallet, Zap, type LucideIcon } from 'lucide-react'

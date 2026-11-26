@@ -46,6 +46,22 @@ export const topBleed = (h: number): CSSProperties => ({
   width: 'calc(412px + 2 * var(--bleed-x, 0px))', height: `calc(${h}px + var(--bleed-top, 0px))`, objectFit: 'cover', maxWidth: 'none',
 })
 
+/**
+ * Map artwork with the route / pill / buttons drawn into it. It must stay at its exact design size
+ * (412 x h) or those baked-in shapes drift away from the live overlays placed on top. A blurred,
+ * stretched copy fills the safe-area / side bleed instead.
+ */
+export function MapArt({ src, h, alt }: { src: string; h: number; alt: string }) {
+  return (
+    <>
+      <div aria-hidden style={{ ...topBleed(h), objectFit: undefined, overflow: 'hidden', pointerEvents: 'none' }}>
+        <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(12px)', transform: 'scale(1.08)' }} />
+      </div>
+      <img src={src} alt={alt} draggable={false} style={{ position: 'absolute', left: 0, top: 0, width: 412, height: h, maxWidth: 'none' }} />
+    </>
+  )
+}
+
 /** Absolutely positioned box (design canvas coordinates). */
 export function Box({
   x, y, w, h, r, bg, border, shadow, style, children, onClick, to,

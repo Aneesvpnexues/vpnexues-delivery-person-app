@@ -33,8 +33,6 @@ class _SosScreenState extends State<SosScreen> {
   double _hold = 0;
   String _incident = 'road_accident';
   List<Map<String, dynamic>> _contacts = [];
-  bool _loading = true;
-  bool _add = false;
   final _name = TextEditingController();
   final _phone = TextEditingController();
   String _relationship = 'parent';
@@ -43,7 +41,6 @@ class _SosScreenState extends State<SosScreen> {
   @override
   void initState() {
     super.initState();
-    _loadContacts();
   }
 
   @override
@@ -52,19 +49,6 @@ class _SosScreenState extends State<SosScreen> {
     _name.dispose();
     _phone.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadContacts() async {
-    try {
-      final res = await widget.state.api.get('/v1/emergency-contacts');
-      if (!mounted) return;
-      setState(() {
-        _contacts = mapList(res);
-        _loading = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
-    }
   }
 
   void _holdStart() {
@@ -100,40 +84,134 @@ class _SosScreenState extends State<SosScreen> {
     }
   }
 
-  Future<void> _saveContact() async {
-    if (_name.text.trim().isEmpty || _phone.text.replaceAll(RegExp(r'\D'), '').length < 10) {
+  Future<void> _openAddContact() async {
+    if (_saving || _contacts.length >= 2) return;
+
+    _name.clear();
+    _phone.clear();
+    _relationship = 'parent';
+    FocusScope.of(context).unfocus();
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: !_saving,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Add emergency contact'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _name,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Full name',
+                        hintText: 'Enter contact name',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text('Relationship'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final relationship in _relationships)
+                          ChoiceChip(
+                            label: Text(
+                              relationship[0].toUpperCase() +
+                                  relationship.substring(1),
+                            ),
+                            selected: _relationship == relationship,
+                            onSelected: _saving
+                                ? null
+                                : (_) {
+                                    setDialogState(() {
+                                      _relationship = relationship;
+                                    });
+                                  },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _phone,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Mobile number',
+                        hintText: 'Enter phone number',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: _saving
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('CANCEL'),
+                ),
+                FilledButton(
+                  onPressed: _saving
+                      ? null
+                      : () => _saveContact(dialogContext, setDialogState),
+                  child: Text(_saving ? 'SAVING…' : 'SAVE CONTACT'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _saveContact(
+    BuildContext dialogContext,
+    StateSetter setDialogState,
+  ) async {
+    final name = _name.text.trim();
+    final phone = _phone.text.trim();
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+
+    if (name.isEmpty || digits.length < 10) {
       showToast(context, 'Enter a name and a valid phone number');
       return;
     }
-    setState(() => _saving = true);
-    try {
-      await widget.state.api.post('/v1/emergency-contacts', body: {
-        'name': _name.text.trim(),
-        'relationship': _relationship,
-        'phone': _phone.text.trim(),
-      });
-      if (!mounted) return;
-      showToast(context, 'Emergency contact saved');
-      setState(() {
-        _add = false;
-        _name.clear();
-        _phone.clear();
-      });
-      await _loadContacts();
-    } catch (e) {
-      if (mounted) showToast(context, e is ApiException ? e.message : 'Could not save the contact');
-    } finally {
-      if (mounted) setState(() => _saving = false);
+
+    // Local state only: do not call the backend for this temporary flow.
+    setState(() {
+      _contacts = [
+        ..._contacts,
+        {
+          'id': 'local-emergency-contact-${DateTime.now().microsecondsSinceEpoch}',
+          'name': name,
+          'relationship': _relationship,
+          'phone': phone,
+          'isPrimary': false,
+        },
+      ];
+    });
+
+    if (dialogContext.mounted) {
+      Navigator.of(dialogContext).pop();
     }
+    _name.clear();
+    _phone.clear();
+    showToast(context, 'Emergency contact added');
   }
 
-  Future<void> _removeContact(Map<String, dynamic> c) async {
-    try {
-      await widget.state.api.delete('/v1/emergency-contacts/${asString(c['id'])}');
-      await _loadContacts();
-    } catch (e) {
-      if (mounted) showToast(context, e is ApiException ? e.message : 'Could not remove the contact');
-    }
+  Future<void> _removeContact(Map<String, dynamic> contact) async {
+    setState(() {
+      _contacts.removeWhere((item) => item['id'] == contact['id']);
+    });
+    showToast(context, 'Emergency contact removed');
   }
 
   Future<void> _dial(String phone) async {
@@ -372,21 +450,37 @@ class _SosScreenState extends State<SosScreen> {
                           ),
                         ),
                       ),
-                      if (_contacts.length < 3 && !_loading)
-                        TextButton(
-                          onPressed: () => setState(() => _add = true),
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(48, 32),
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            foregroundColor: C.green,
-                          ),
-                          child: const Text(
-                            '+ Add',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                      if (_contacts.length < 2)
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _openAddContact(),
+                            borderRadius: BorderRadius.circular(10),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    LucideIcons.plus,
+                                    size: 15,
+                                    color: C.green,
+                                  ),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'Add',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: C.green,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -394,69 +488,27 @@ class _SosScreenState extends State<SosScreen> {
                   ),
                   const SizedBox(height: 6),
                   Expanded(
-                    child: _loading
-                        ? const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'Loading…',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                color: C.muted,
+                    child: contacts.isEmpty
+                        ? const SizedBox.expand(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Padding(
+                                padding: EdgeInsets.only(right: 12),
+                                child: Text(
+                                  'Add someone we should call if you’re in an accident.',
+                                  maxLines: 2,
+                                  textAlign: TextAlign.left,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 12,
+                                    height: 1.35,
+                                    color: C.muted,
+                                  ),
+                                ),
                               ),
                             ),
                           )
-                        : contacts.isEmpty
-                            ? Row(
-                                children: [
-                                  const Expanded(
-                                    child: Text(
-                                      'Add someone we should call if you’re in an accident.',
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 12,
-                                        height: 1.35,
-                                        color: C.muted,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    height: 40,
-                                    child: OutlinedButton.icon(
-                                      onPressed: () =>
-                                          setState(() => _add = true),
-                                      icon: const Icon(
-                                        LucideIcons.plus,
-                                        size: 15,
-                                      ),
-                                      label: const Text(
-                                        'ADD CONTACT',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: C.green,
-                                        side: const BorderSide(
-                                          color: C.green,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
                             : Column(
                                 children: [
                                   for (var i = 0; i < contacts.length; i++) ...[
@@ -466,12 +518,13 @@ class _SosScreenState extends State<SosScreen> {
                                         thickness: 1,
                                         color: C.tint5,
                                       ),
-                                    Expanded(
+                                    SizedBox(
+                                      height: 43,
                                       child: Row(
-                                              children: [
+                                        children: [
                                                 Container(
-                                                  width: 36,
-                                                  height: 36,
+                                                  width: 32,
+                                                  height: 32,
                                                   alignment: Alignment.center,
                                                   decoration: BoxDecoration(
                                                     color: i.isOdd
@@ -580,56 +633,7 @@ class _SosScreenState extends State<SosScreen> {
             ),
           ),
 
-          if (_add)
-            Modal(
-              onClose: () => setState(() => _add = false),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Emergency contact',
-                      style: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w700, color: C.ink)),
-                  const SizedBox(height: 12),
-                  Field(w: 324, h: 48, label: 'Name', controller: _name, placeholder: 'Full name'),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final r in _relationships)
-                        GestureDetector(
-                          onTap: () => setState(() => _relationship = r),
-                          child: IntrinsicWidth(
-                            child: Container(
-                              height: 36,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: _relationship == r ? C.green : Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                border: _relationship == r ? null : Border.all(color: C.line),
-                              ),
-                              child: Text(
-                                r[0].toUpperCase() + r.substring(1),
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: _relationship == r ? Colors.white : C.ink,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Field(w: 324, h: 48, label: 'Mobile number', controller: _phone, keyboard: TextInputType.phone, placeholder: '10-digit number'),
-                  const SizedBox(height: 16),
-                  Btn(w: 324, h: 48, label: _saving ? 'SAVING…' : 'SAVE CONTACT', onTap: _saving ? null : _saveContact),
-                ],
-              ),
-            ),
+
         ],
       ),
     );

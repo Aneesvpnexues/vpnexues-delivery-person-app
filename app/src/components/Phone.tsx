@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Toast } from './toast'
 
 const W = 412
@@ -18,6 +18,11 @@ function stableHeight() {
   else stable.h = Math.max(stable.h, h)
   return stable.h
 }
+
+/** Gap kept between a focused field and the top of the keyboard (screen px). */
+const KB_GAP = 16
+const isField = (el: Element | null): el is HTMLElement =>
+  !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || (el as HTMLElement).isContentEditable)
 
 type Fit = { scale: number; h: number; left: number; top: number; bx: number; bt: number; bb: number; desk: boolean }
 
@@ -66,6 +71,43 @@ export default function Phone({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Keyboard open: never re-scale (see stableHeight), just slide the whole canvas up far enough that the
+  // focused field stays visible above the keyboard. Slides back when the keyboard closes.
+  const [lift, setLift] = useState(0)
+  const liftRef = useRef(0)
+  useEffect(() => {
+    const vv = window.visualViewport
+    let t = 0
+    const apply = (v: number) => { v = Math.round(v); if (v !== liftRef.current) { liftRef.current = v; setLift(v) } }
+    const update = () => {
+      const el = document.activeElement
+      const vh = vv?.height ?? window.innerHeight
+      const offTop = vv?.offsetTop ?? 0
+      const keyboard = stable.h - vh - offTop
+      if (!isField(el) || keyboard < 120) return apply(0)
+      const r = el.getBoundingClientRect()
+      const bottom = r.bottom + liftRef.current        // where the field sits with no lift
+      const topEdge = r.top + liftRef.current
+      const need = bottom + KB_GAP - (vh + offTop)
+      apply(need <= 0 ? 0 : Math.min(need, Math.max(0, topEdge - 12), keyboard))
+      if (window.scrollY) window.scrollTo(0, 0)
+    }
+    const soon = () => { clearTimeout(t); t = window.setTimeout(update, 80) }
+    vv?.addEventListener('resize', update)
+    vv?.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+    document.addEventListener('focusin', soon)
+    document.addEventListener('focusout', soon)
+    return () => {
+      clearTimeout(t)
+      vv?.removeEventListener('resize', update)
+      vv?.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+      document.removeEventListener('focusin', soon)
+      document.removeEventListener('focusout', soon)
+    }
+  }, [])
+
   const { scale, h, left, top, bx, bt, bb, desk } = fit
   const vars = {
     '--bleed-x': `${bx}px`, '--bleed-top': `${bt}px`, '--bleed-bottom': `${bb}px`,
@@ -74,7 +116,7 @@ export default function Phone({ children }: { children: ReactNode }) {
   return (
     <div className={`stage ${desk ? 'desk' : ''}`} style={h ? { height: h } : undefined}>
       <div ref={probe} className="safe-probe" aria-hidden />
-      <div style={{ position: 'absolute', left, top, width: W * scale, height: H * scale, visibility: scale ? 'visible' : 'hidden' }}>
+      <div style={{ position: 'absolute', left, top, width: W * scale, height: H * scale, visibility: scale ? 'visible' : 'hidden', transform: lift ? `translateY(${-lift}px)` : undefined, transition: 'transform .2s ease' }}>
         {/* On phones, edge art (headers, maps, glows, leaves) bleeds past the canvas to the real screen edges. */}
         <div className="phone" style={{ ...vars, transform: `scale(${scale})`, transformOrigin: 'top left', overflow: desk ? 'hidden' : 'visible' }}>
           {children}

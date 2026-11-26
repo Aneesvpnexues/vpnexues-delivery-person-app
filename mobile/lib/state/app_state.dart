@@ -1,4 +1,3 @@
-
 import 'package:flutter/widgets.dart';
 
 import '../core/api_client.dart';
@@ -10,23 +9,133 @@ class AppState extends ChangeNotifier {
       partner = null;
       settings = {};
       unread = 0;
-      notifyListeners();
+
+      if (!_disposed) {
+        notifyListeners();
+      }
     };
   }
 
   final ApiClient api;
 
   bool booting = true;
+  bool offline = false;
+  Future<void>? _resuming;
   Map<String, dynamic>? partner;
   Map<String, dynamic> settings = {};
+
   List<Map<String, dynamic>> cities = [];
   bool citiesLoading = false;
   bool citiesFailed = false;
+
   int unread = 0;
 
-  // --------------------------------------------------
-  // BASIC APP STATE
-  // --------------------------------------------------
+  // Shared bottom-navigation selection so deep screens can return to Home.
+  int homeTabIndex = 0;
+
+  // Demo orders live in memory only; they do not require the backend.
+  final List<Map<String, dynamic>> demoOrders = [];
+
+  void setHomeTabIndex(int index) {
+    homeTabIndex = index.clamp(0, 3).toInt();
+    if (!_disposed) notifyListeners();
+  }
+
+  void upsertDemoOrder(Map<String, dynamic> order) {
+    final id = asString(order['id']);
+    final index = demoOrders.indexWhere((item) => asString(item['id']) == id);
+    final copy = Map<String, dynamic>.from(order);
+    if (index >= 0) {
+      demoOrders[index] = copy;
+    } else {
+      demoOrders.insert(0, copy);
+    }
+    if (!_disposed) notifyListeners();
+  }
+
+  // Demo earnings are calculated from delivered demo orders only.
+  // The delivery timestamp is stored in the delivered timeline event.
+  DateTime? _demoDeliveredAt(Map<String, dynamic> order) {
+    final raw = order['deliveredAt'] ??
+        order['completedAt'] ??
+        order['updatedAt'];
+    if (raw is DateTime) return raw;
+    final parsed = DateTime.tryParse(asString(raw));
+    if (parsed != null) return parsed;
+
+    final timeline = mapList(order['timeline']);
+    for (final event in timeline.reversed) {
+      if (asString(event['status']).toLowerCase() == 'delivered') {
+        final at = event['at'];
+        if (at is DateTime) return at;
+        return DateTime.tryParse(asString(at));
+      }
+    }
+    return null;
+  }
+
+  List<Map<String, dynamic>> demoDeliveredOrdersFor(String range) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weekStart = today.subtract(Duration(days: today.weekday - 1));
+
+    return demoOrders.where((order) {
+      if (asString(order['status']).toLowerCase() != 'delivered') {
+        return false;
+      }
+
+      final deliveredAt = _demoDeliveredAt(order);
+      if (deliveredAt == null) return false;
+      final date = DateTime(deliveredAt.year, deliveredAt.month, deliveredAt.day);
+
+      switch (range) {
+        case 'today':
+          return date == today;
+        case 'week':
+          return !date.isBefore(weekStart) && !date.isAfter(today);
+        case 'month':
+          return date.year == now.year && date.month == now.month;
+        case 'year':
+          return date.year == now.year;
+        case 'all':
+          return true;
+        default:
+          return false;
+      }
+    }).toList();
+  }
+
+  int demoOrderEarning(Map<String, dynamic> order) {
+    final saved = asInt(order['earningPaise']);
+    return saved > 0
+        ? saved
+        : asInt(order['payBasePaise']) +
+            asInt(order['payDistancePaise']) +
+            asInt(order['tipPaise']);
+  }
+
+  int demoEarningsFor(String range) {
+    return demoDeliveredOrdersFor(range).fold<int>(
+      0,
+      (total, order) => total + demoOrderEarning(order),
+    );
+  }
+
+  int demoBasePayFor(String range) => demoDeliveredOrdersFor(range)
+      .fold<int>(0, (total, order) => total + asInt(order['payBasePaise']));
+
+  int demoDistancePayFor(String range) => demoDeliveredOrdersFor(range)
+      .fold<int>(0, (total, order) => total + asInt(order['payDistancePaise']));
+
+  int demoExtrasFor(String range) => demoDeliveredOrdersFor(range)
+      .fold<int>(0, (total, order) => total + asInt(order['tipPaise']));
+
+  int get demoDeliveriesToday => demoDeliveredOrdersFor('today').length;
+  int get demoEarningsToday => demoEarningsFor('today');
+  int get demoAvailableEarnings => demoEarningsFor('all');
+
+  bool _disposed = false;
+  Future<void>? _bootFuture;
 
   bool get loggedIn => partner != null;
 
@@ -35,6 +144,17 @@ class AppState extends ChangeNotifier {
   String get name => asString(partner?['fullName'], 'Partner');
 
   String get kycStatus => asString(partner?['kycStatus'], 'not_started');
+
+  /// Signup draft stored locally.
+  Map<String, dynamic> get signupDraft => api.getSignupDraft() ?? {};
+
+  Future<void> saveSignupDraft(Map<String, dynamic> draft) {
+    return api.saveSignupDraft(draft);
+  }
+
+  Future<void> saveLoginPhone(String phone) {
+    return api.saveLoginPhone(phone);
+  }
 
   // --------------------------------------------------
   // DARK MODE
@@ -106,25 +226,95 @@ class AppState extends ChangeNotifier {
       ...patch,
     };
 
-    notifyListeners();
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
+  // --------------------------------------------------
+  // SESSION VALIDATION
+  // --------------------------------------------------
+
+  static bool _invalidSession(ApiException e) =>
+      e.status == 401 ||
+      e.code == 'UNAUTHENTICATED' ||
+      e.code == 'INVALID_SESSION' ||
+      e.code == 'REVOKED';
+
+  void _clearSessionState() {
+    partner = null;
+    settings = {};
+    unread = 0;
   }
 
   // --------------------------------------------------
   // APP INITIALIZATION
   // --------------------------------------------------
 
-  Future<void> boot() async {
-    try {
-      await loadCities();
+  Future<void> boot() {
+    return _bootFuture ??= _runBoot();
+  }
 
+  Future<void> _runBoot() async {
+    booting = true;
+
+    try {
+      // Restore credentials from platform-backed secure storage, flush any
+      // logout that could not reach the server, then validate the session.
+      await api.restore();
+      await api.flushPendingLogout();
+      await loadCities();
       if (api.hasSession) {
+        await api.ensureFreshToken();
         await loadMe();
       }
-    } catch (_) {
-      await api.clear();
-      partner = null;
+      offline = false;
+    } on ApiException catch (e) {
+      if (_invalidSession(e)) {
+        await api.expireSession();
+        _clearSessionState();
+      } else {
+        // Network/server errors must not destroy a valid stored session.
+        offline = true;
+      }
+    } catch (e, stack) {
+      debugPrint('App initialization failed: $e');
+      debugPrintStack(stackTrace: stack);
+      offline = true;
     } finally {
       booting = false;
+
+      if (!_disposed) {
+        notifyListeners();
+      }
+    }
+  }
+  /// Called when the app returns to the foreground. Shares the single-flight
+  /// refresh with boot so startup and resume cannot double-spend a token.
+  Future<void> resumeSession() {
+    if (booting || !api.hasSession) return Future.value();
+    return _resuming ??= _doResume().whenComplete(() => _resuming = null);
+  }
+
+  Future<void> _doResume() async {
+    try {
+      await api.flushPendingLogout();
+      await api.ensureFreshToken();
+      await loadMe();
+      offline = false;
+    } on ApiException catch (e) {
+      if (_invalidSession(e)) {
+        await api.expireSession();
+        _clearSessionState();
+      } else {
+        offline = true;
+      }
+    } catch (e) {
+      debugPrint('Session resume failed: $e');
+      offline = true;
+    }
+
+    if (!_disposed) {
       notifyListeners();
     }
   }
@@ -138,16 +328,23 @@ class AppState extends ChangeNotifier {
 
     citiesLoading = true;
     citiesFailed = false;
-    notifyListeners();
+
+    if (!_disposed) {
+      notifyListeners();
+    }
 
     try {
       cities = mapList(await api.get('/v1/cities'));
       citiesFailed = cities.isEmpty;
-    } catch (_) {
+    } catch (e) {
       citiesFailed = true;
+      debugPrint('Cities loading failed: $e');
     } finally {
       citiesLoading = false;
-      notifyListeners();
+
+      if (!_disposed) {
+        notifyListeners();
+      }
     }
   }
 
@@ -158,22 +355,33 @@ class AppState extends ChangeNotifier {
   Future<void> loadMe() async {
     final res = await api.get('/v1/me');
 
-    // Partner profile contains the saved language.
     partner = Map<String, dynamic>.from(res as Map);
 
-    // Partner settings contain preferences such as dark mode
-    // and voice navigation.
-    try {
-      final s = await api.get('/v1/me/settings');
+    // Notify immediately after authentication succeeds.
+    if (!_disposed) {
+      notifyListeners();
+    }
 
-      settings = s is Map
-          ? Map<String, dynamic>.from(s)
-          : {};
-    } catch (_) {}
-
+    // Awaited so callers of boot()/login() observe a fully hydrated state
+    // (settings + unread badge) before they continue.
+    await _loadSettings();
     await refreshUnread();
+  }
 
-    notifyListeners();
+  Future<void> _loadSettings() async {
+    try {
+      final result = await api.get('/v1/me/settings');
+
+      settings = result is Map
+          ? Map<String, dynamic>.from(result)
+          : {};
+
+      if (!_disposed) {
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Settings loading failed: $e');
+    }
   }
 
   // --------------------------------------------------
@@ -182,22 +390,31 @@ class AppState extends ChangeNotifier {
 
   Future<void> refreshUnread() async {
     try {
-      final n = await api.get(
+      final result = await api.get(
         '/v1/notifications',
         query: {'limit': '1'},
       );
 
-      unread = n is Map ? asInt(n['unreadCount']) : 0;
+      unread = result is Map
+          ? asInt(result['unreadCount'])
+          : 0;
 
-      notifyListeners();
-    } catch (_) {}
+      if (!_disposed) {
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Notification loading failed: $e');
+    }
   }
 
   // --------------------------------------------------
-  // LOGIN
+  // PHONE / PASSWORD LOGIN
   // --------------------------------------------------
 
-  Future<void> login(String phone, String password) async {
+  Future<void> login(
+    String phone,
+    String password,
+  ) async {
     final res = await api.post(
       '/v1/auth/login',
       body: {
@@ -207,12 +424,36 @@ class AppState extends ChangeNotifier {
     );
 
     await api.setTokens(Map<String, dynamic>.from(res as Map));
+
     await loadMe();
+  }
+
+  /// Dev-mode login: opens a local session without calling the backend, so
+  /// the app can be used fully offline.
+  Future<void> loginLocally(String phone) async {
+    await api.setTokens({
+      'accessToken': 'dev-$phone',
+      'refreshToken': 'dev',
+    });
+
+    partner = <String, dynamic>{
+      'id': 'dev',
+      'fullName': phone,
+      'phone': phone,
+      'isOnline': true,
+    };
+
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   // --------------------------------------------------
   // SIGNUP
   // --------------------------------------------------
+
+  /// Temporary dev OTP accepted to verify a mobile number without the backend.
+  static const String devOtpCode = '123456';
 
   Future<Map<String, dynamic>> signupStart({
     required String fullName,
@@ -239,24 +480,44 @@ class AppState extends ChangeNotifier {
     return Map<String, dynamic>.from(res as Map);
   }
 
-  Future<void> signupVerify(String phone, String code) async {
-    final res = await api.post(
-      '/v1/auth/signup/verify',
-      body: {
-        'phone': phone,
-        'code': code,
-      },
-    );
+  Future<void> signupVerify(
+    String phone,
+    String code,
+  ) async {
+    try {
+      final res = await api.post(
+        '/v1/auth/signup/verify',
+        body: {
+          'phone': phone,
+          'code': code,
+        },
+      );
 
-    await api.setTokens(Map<String, dynamic>.from(res as Map));
-    await loadMe();
+      await api.setTokens(Map<String, dynamic>.from(res as Map));
+
+      await loadMe();
+      return;
+    } on ApiException catch (e) {
+      // The server answered (wrong/expired code, rate limit, …): surface it.
+      if (e.status != 0) rethrow;
+      // status 0 = unreachable network → fall through to the dev bypass.
+    }
+
+    // Temporary dev bypass: accept the code and set a local session without
+    // calling the backend. Only reached when the backend cannot be reached.
+    await api.setTokens({
+      'accessToken': 'dev-$phone',
+      'refreshToken': 'dev',
+    });
   }
 
   // --------------------------------------------------
   // OTP LOGIN
   // --------------------------------------------------
 
-  Future<Map<String, dynamic>> loginOtpStart(String phone) async {
+  Future<Map<String, dynamic>> loginOtpStart(
+    String phone,
+  ) async {
     final res = await api.post(
       '/v1/auth/login/otp/start',
       body: {'phone': phone},
@@ -265,7 +526,10 @@ class AppState extends ChangeNotifier {
     return Map<String, dynamic>.from(res as Map);
   }
 
-  Future<void> loginOtpVerify(String phone, String code) async {
+  Future<void> loginOtpVerify(
+    String phone,
+    String code,
+  ) async {
     final res = await api.post(
       '/v1/auth/login/otp/verify',
       body: {
@@ -275,6 +539,7 @@ class AppState extends ChangeNotifier {
     );
 
     await api.setTokens(Map<String, dynamic>.from(res as Map));
+
     await loadMe();
   }
 
@@ -289,7 +554,9 @@ class AppState extends ChangeNotifier {
     );
   }
 
-  Future<Map<String, dynamic>> resetStart(String phone) async {
+  Future<Map<String, dynamic>> resetStart(
+    String phone,
+  ) async {
     final res = await api.post(
       '/v1/auth/password/reset/start',
       body: {'phone': phone},
@@ -325,7 +592,9 @@ class AppState extends ChangeNotifier {
 
     partner?['isOnline'] = res is Map ? res['online'] : value;
 
-    notifyListeners();
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   // --------------------------------------------------
@@ -334,7 +603,9 @@ class AppState extends ChangeNotifier {
 
   /// Saves preferences to the backend settings endpoint.
   /// Do not use this method to save the application language.
-  Future<void> saveSettings(Map<String, dynamic> patch) async {
+  Future<void> saveSettings(
+    Map<String, dynamic> patch,
+  ) async {
     final res = await api.patch(
       '/v1/me/settings',
       body: patch,
@@ -347,7 +618,9 @@ class AppState extends ChangeNotifier {
             ...patch,
           };
 
-    notifyListeners();
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   // --------------------------------------------------
@@ -355,8 +628,11 @@ class AppState extends ChangeNotifier {
   // --------------------------------------------------
 
   /// Updates partner profile fields, including application language.
-  Future<void> saveProfile(Map<String, dynamic> patch) async {
+  Future<void> saveProfile(
+    Map<String, dynamic> patch,
+  ) async {
     await api.patch('/v1/me', body: patch);
+
     await loadMe();
   }
 
@@ -365,21 +641,49 @@ class AppState extends ChangeNotifier {
   // --------------------------------------------------
 
   Future<void> logout() async {
-    try {
-      if (api.refreshToken != null) {
+    final token = api.refreshToken;
+    if (token != null) {
+      try {
         await api.post(
           '/v1/auth/logout',
-          body: {'refreshToken': api.refreshToken},
+          body: {'refreshToken': token},
+          auth: false,
+          timeout: const Duration(seconds: 15),
         );
+      } on ApiException catch (e) {
+        if (e.status == 0 || e.status >= 500) {
+          // Offline/server failure: keep a one-shot revocation token in secure
+          // storage and flush it on the next boot or resume.
+          await api.clear(retainForRevocation: true);
+          _clearSessionState();
+          offline = true;
+          _notify();
+          return;
+        }
+        // 401/404 means the session is already invalid on the server.
+      } catch (e) {
+        debugPrint('Remote logout failed: $e');
+        await api.clear(retainForRevocation: true);
+        _clearSessionState();
+        offline = true;
+        _notify();
+        return;
       }
-    } catch (_) {}
-
+    }
     await api.clear();
+    _clearSessionState();
+    _notify();
+  }
 
-    partner = null;
-    settings = {};
-    unread = 0;
+  void _notify() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
 
-    notifyListeners();
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

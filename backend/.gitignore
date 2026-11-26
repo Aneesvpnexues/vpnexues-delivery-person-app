@@ -1,6 +1,18 @@
 target/
 uploads/
 *.log
+npm-debug.log*
+.npm/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Local ignores (from pushed codes)
 *.err
 .pgbin/
 .pgdata/

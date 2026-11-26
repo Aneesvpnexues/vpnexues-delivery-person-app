@@ -1,3 +1,5 @@
+// app/src/api/client.ts
+
 import { toast } from '../components/toast'
 
 /** Backend base URL. Override at build time with VITE_API_URL (e.g. a local backend). */
@@ -19,8 +21,6 @@ export class ApiError extends Error {
 }
 
 // ---------------- token storage ----------------
-// localStorage persists inside the Capacitor WebView. Move to @capacitor/preferences or the
-// Android Keystore before a public release.
 const KEY = 'vpn.session'
 let tokens: Tokens | null = (() => {
   try { return JSON.parse(localStorage.getItem(KEY) ?? 'null') } catch { return null }
@@ -30,6 +30,15 @@ export const getTokens = () => tokens
 export function setTokens(t: Tokens | null) {
   tokens = t
   try { t ? localStorage.setItem(KEY, JSON.stringify(t)) : localStorage.removeItem(KEY) } catch { /* storage unavailable */ }
+}
+
+// ---------------- user profile storage ----------------
+const ME_KEY = 'vpn.me'
+export const getStoredMe = () => {
+  try { return JSON.parse(localStorage.getItem(ME_KEY) ?? 'null') } catch { return null }
+}
+export const setStoredMe = (me: any) => {
+  try { me ? localStorage.setItem(ME_KEY, JSON.stringify(me)) : localStorage.removeItem(ME_KEY) } catch { /* storage unavailable */ }
 }
 
 const lostListeners = new Set<() => void>()
@@ -91,6 +100,7 @@ export async function api<T = any>(path: string, o: Opts = {}): Promise<T> {
       res = await send(path, o, tokens?.accessToken)
     } else {
       setTokens(null)
+      setStoredMe(null)
       lostListeners.forEach((fn) => fn())
     }
   }

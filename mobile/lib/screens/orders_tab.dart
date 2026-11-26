@@ -6,6 +6,7 @@ import '../core/format.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
 import 'order_detail_screen.dart';
+import 'zone_screen.dart';
 
 class OrdersTab extends StatefulWidget {
   const OrdersTab({super.key, required this.state, required this.onOpenTab});
@@ -20,7 +21,7 @@ class OrdersTab extends StatefulWidget {
 class _OrdersTabState extends State<OrdersTab> {
   String _tab = 'active';
   String _range = 'today';
-  List<Map<String, dynamic>> _items = [];
+  final List<Map<String, dynamic>> _items = [];
   bool _loading = true;
   bool _searchOpen = false;
   final _search = TextEditingController();
@@ -31,34 +32,42 @@ class _OrdersTabState extends State<OrdersTab> {
   @override
   void initState() {
     super.initState();
+    widget.state.addListener(_onAppStateChanged);
     _load();
+  }
+
+  void _onAppStateChanged() {
+    if (mounted) _load();
   }
 
   @override
   void dispose() {
+    widget.state.removeListener(_onAppStateChanged);
     _search.dispose();
     super.dispose();
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final q = <String, String>{'tab': _tab};
-      if (_tab == 'completed') {
-        q['range'] = _range;
-        q['limit'] = '100';
-      }
-      final res = await widget.state.api.get('/v1/orders', query: q);
-      if (!mounted) return;
-      setState(() {
-        _items = mapList(res);
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-      showToast(context, e is ApiException ? e.message : 'Could not load orders');
-    }
+    // Demo orders are held in AppState, so the Completed tab can refresh
+    // immediately without depending on the backend.
+    if (!mounted) return;
+    setState(() {
+      _items
+        ..clear()
+        ..addAll(
+          widget.state.demoOrders.where((order) {
+            final status = asString(order['status']);
+            if (_tab == 'completed') {
+              return status == 'delivered' || status == 'cancelled';
+            }
+            if (_tab == 'upcoming') {
+              return status == 'scheduled';
+            }
+            return status != 'delivered' && status != 'cancelled' && status != 'scheduled';
+          }).map((order) => Map<String, dynamic>.from(order)),
+        );
+      _loading = false;
+    });
   }
 
   Future<void> _setOnline() async {
@@ -188,7 +197,18 @@ class _OrdersTabState extends State<OrdersTab> {
             Positioned(
               left: 229,
               top: 735,
-              child: Btn(w: 163, kind: BtnKind.outline, label: 'MY ZONE', onTap: () => widget.onOpenTab(3)),
+              child: Btn(
+                w: 163,
+                kind: BtnKind.outline,
+                label: 'MY ZONE',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ZoneScreen(state: widget.state),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
 

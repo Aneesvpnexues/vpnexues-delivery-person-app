@@ -34,6 +34,7 @@ import 'package:vpnexues_partner/screens/sos_screen.dart';
 import 'package:vpnexues_partner/screens/support_screen.dart';
 import 'package:vpnexues_partner/screens/transactions_screen.dart';
 import 'package:vpnexues_partner/screens/trip_screen.dart';
+import 'package:vpnexues_partner/screens/upload_docs.dart';
 import 'package:vpnexues_partner/screens/vehicle_screen.dart';
 import 'package:vpnexues_partner/screens/zone_screen.dart';
 import 'package:vpnexues_partner/state/app_state.dart';
@@ -85,12 +86,12 @@ void main() {
 
     final cases = <String, Widget Function(AppState)>{
       'SplashScreen': (s) => SplashScreen(state: s),
-      'SplashScreen.loading': (s) => SplashScreen(state: s, loading: true),
       'LoginScreen': (s) => LoginScreen(state: s),
       'SignupScreen': (s) => SignupScreen(state: s),
       'OtpScreen': (s) => OtpScreen(state: s, phone: '9876543210', purpose: 'login'),
       'SetPasswordScreen': (s) => SetPasswordScreen(state: s),
       'SetPasswordScreen.fromSettings': (s) => SetPasswordScreen(state: s, fromSettings: true),
+      'UploadDocsScreen': (s) => UploadDocsScreen(state: s),
       'ResetPasswordScreen': (s) => ResetPasswordScreen(state: s),
       'HomeShell': (s) => HomeShell(state: s),
       'HomeTab': (s) => HomeTab(state: s, onOpenTab: onOpenTab),

@@ -2,7 +2,7 @@ import { useRef, useState, type CSSProperties } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, CornerUpRight, Flashlight, Keyboard, MessageCircle, Navigation, Package, Phone, ScanLine, TriangleAlert } from 'lucide-react'
 import { Box, Btn, C, Ic, LinkText, Modal, P, Pill, RoundBtn, Screen, T, card, pill, toast } from '../components/kit'
-import { topBleed } from '../components/ui'
+import { MapArt } from '../components/ui'
 import { api, showError } from '../api/client'
 import { Loading, initials, inr, time, useApi, useSession } from '../api/session'
 import { orderScreen, statusLabel } from '../api/orders'
@@ -57,7 +57,7 @@ export function OrderDetails() {
 
   return (
     <Screen>
-      <img src={mapDetails} alt="Route map" style={topBleed(232)} />
+      <MapArt src={mapDetails} h={232} alt="Route map" />
       <RoundBtn icon={ArrowLeft} x={20} y={48} onClick={() => nav(P('1:944'))} />
       <Pill x={257} y={60} w={135} label={statusLabel[o.status]} style={{ justifyContent: 'center' }} />
       <Pill x={20} y={190} w={121} label={`${o.distance_km} km${o.eta_minutes ? ` · ${o.eta_minutes} min` : ''}`} bg="#fff" color="#3a4a40" dot="#555" style={{ justifyContent: 'center' }} />
@@ -243,7 +243,7 @@ export function Delivering() {
   const street = o.drop_address.split(',').slice(0, 2).join(',')
   return (
     <Screen>
-      <img src={mapTrip} alt="Route map" style={topBleed(500)} />
+      <MapArt src={mapTrip} h={500} alt="Route map" />
       <RoundBtn icon={ArrowLeft} x={20} y={54} onClick={() => nav(`${P('1:1223')}?id=${o.id}`)} />
       <Box onClick={() => openMaps(mapsUrl(o, 'drop'))} x={95} y={48} w={297} h={58} r={24} bg="#073d2a" shadow="0 10px 20px rgba(9,83,52,.2)" />
       <Ic icon={CornerUpRight} x={114} y={68} s={18} c="#fff" />

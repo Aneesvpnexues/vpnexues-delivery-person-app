@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/api_client.dart';
+import 'core/session_lifecycle.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'screens/root_gate.dart';
 import 'state/app_state.dart';
@@ -11,7 +12,8 @@ import 'ui/theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
-  final state = AppState(ApiClient(prefs));
+  final api = ApiClient(prefs);
+  final state = AppState(api);
   runApp(PartnerApp(state: state));
   state.boot();
 }
@@ -40,7 +42,10 @@ class PartnerApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: RootGate(state: state),
+          home: SessionLifecycle(
+            state: state,
+            child: RootGate(state: state),
+          ),
         );
       },
     );

@@ -405,7 +405,7 @@ class _ChangeCityScreenState extends State<ChangeCityScreen> {
           DTxt(
             'Keep my current location',
             x: 20,
-            y: 860,
+            y: 840,
             w: 372,
             s: 14,
             wt: FontWeight.w700,

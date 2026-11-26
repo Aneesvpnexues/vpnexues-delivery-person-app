@@ -320,7 +320,7 @@ class _SupportScreenState extends State<SupportScreen> {
         child: InkWell(
           onTap: () => setState(() => _open = open ? -1 : index),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,

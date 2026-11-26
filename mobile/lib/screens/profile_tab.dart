@@ -47,10 +47,16 @@ class _ProfileTabState extends State<ProfileTab> {
       if (!mounted) return;
       setState(() {
         _methods = mapList(res[0]);
-        _vehicle = res[1] is Map ? Map<String, dynamic>.from(res[1] as Map) : null;
-        final docs = res[2] is Map ? Map<String, dynamic>.from(res[2] as Map) : const <String, dynamic>{};
+        _vehicle = res[1] is Map
+            ? Map<String, dynamic>.from(res[1] as Map)
+            : null;
+        final docs = res[2] is Map
+            ? Map<String, dynamic>.from(res[2] as Map)
+            : const <String, dynamic>{};
         _missing = mapList(docs['missing']).length;
-        _expiring = mapList(docs['documents']).where((d) => asBool(d['expiringSoon'])).length;
+        _expiring = mapList(docs['documents'])
+            .where((d) => asBool(d['expiringSoon']))
+            .length;
       });
     } catch (_) {}
   }

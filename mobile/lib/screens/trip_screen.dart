@@ -7,12 +7,21 @@ import '../core/format.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
 import 'handover_screen.dart';
+import 'sos_screen.dart';
 
 class TripScreen extends StatefulWidget {
-  const TripScreen({super.key, required this.state, required this.orderId});
+  const TripScreen({
+    super.key,
+    required this.state,
+    required this.orderId,
+    this.demoOrder,
+  });
 
   final AppState state;
   final String orderId;
+  final Map<String, dynamic>? demoOrder;
+
+  bool get isDemo => demoOrder != null;
 
   @override
   State<TripScreen> createState() => _TripScreenState();
@@ -29,10 +38,24 @@ class _TripScreenState extends State<TripScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    if (widget.demoOrder != null) {
+      _order = Map<String, dynamic>.from(widget.demoOrder!);
+      _loading = false;
+    } else {
+      _load();
+    }
   }
 
   Future<void> _load() async {
+    if (widget.isDemo) {
+      if (!mounted) return;
+      setState(() {
+        _order = Map<String, dynamic>.from(widget.demoOrder!);
+        _loading = false;
+      });
+      return;
+    }
+
     try {
       final res = await widget.state.api.get('/v1/orders/${widget.orderId}');
       if (!mounted) return;
@@ -48,6 +71,31 @@ class _TripScreenState extends State<TripScreen> {
   }
 
   Future<void> _arrive() async {
+    if (widget.isDemo) {
+      final demoHandoverOrder = Map<String, dynamic>.from(_order ?? widget.demoOrder!);
+      demoHandoverOrder['status'] = 'arrived';
+      final updatedTimeline = mapList(demoHandoverOrder['timeline'])
+          .map((event) => Map<String, dynamic>.from(event))
+          .toList();
+      updatedTimeline.add({
+        'status': 'arrived',
+        'at': DateTime.now().toIso8601String(),
+      });
+      demoHandoverOrder['timeline'] = updatedTimeline;
+
+      if (!mounted) return;
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => HandOverScreen(
+            state: widget.state,
+            orderId: widget.orderId,
+            demoOrder: demoHandoverOrder,
+          ),
+        ),
+      );
+      return;
+    }
+
     if (_busy) return;
     setState(() => _busy = true);
     try {
@@ -66,6 +114,11 @@ class _TripScreenState extends State<TripScreen> {
   }
 
   Future<void> _openMaps(Map<String, dynamic> o) async {
+    if (widget.isDemo) {
+      showToast(context, 'Maps navigation is unavailable for demo orders.');
+      return;
+    }
+
     final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${asDouble(o['dropLat'])},${asDouble(o['dropLng'])}&travelmode=two-wheeler');
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -142,6 +195,13 @@ class _TripScreenState extends State<TripScreen> {
             r: 26,
             bg: const Color(0xFFC92526),
             shadow: sh(10, 20, .2),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SosScreen(state: widget.state),
+                ),
+              );
+            },
             child: const Center(
               child: Text('SOS',
                   style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
@@ -249,7 +309,7 @@ class _TripScreenState extends State<TripScreen> {
 
           DBox(
             x: 20,
-            y: 824,
+            y: 800,
             w: 372,
             h: 63,
             r: 32,
@@ -259,7 +319,7 @@ class _TripScreenState extends State<TripScreen> {
           DTxt(
             _busy ? 'MARKING ARRIVED…' : 'SWIPE – I’VE ARRIVED',
             x: 84,
-            y: 845,
+            y: 821,
             w: 300,
             s: 14,
             wt: FontWeight.w700,
@@ -269,7 +329,7 @@ class _TripScreenState extends State<TripScreen> {
           ),
           Positioned(
             left: 27 + _dx,
-            top: 830,
+            top: 806,
             child: GestureDetector(
               onHorizontalDragUpdate: (d) => setState(() => _dx = (_dx + d.delta.dx).clamp(0, _max)),
               onHorizontalDragEnd: (_) {
