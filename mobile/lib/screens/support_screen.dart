@@ -10,6 +10,10 @@ import '../state/app_state.dart';
 import '../ui/design.dart';
 import 'sos_screen.dart';
 
+/// Temporarily pauses all server/API/database calls in this screen.
+/// Set to `false` when you are ready to reconnect the backend.
+const bool _pauseBackend = true;
+
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key, required this.state});
 
@@ -75,6 +79,12 @@ class _SupportScreenState extends State<SupportScreen> {
   }
 
   Future<void> _loadOrder() async {
+    if (_pauseBackend) {
+      // Backend paused: skip API call and finish loading immediately.
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+
     try {
       final res = await widget.state.api
           .get('/v1/orders', query: {'tab': 'active', 'limit': '1'});
@@ -92,10 +102,25 @@ class _SupportScreenState extends State<SupportScreen> {
   Future<void> _report(String topic) async {
     final order = _order;
     if (order == null) {
-      _chat();
+      _chat(initialMessage: topic);
       return;
     }
+
     setState(() => _issue = topic);
+
+    if (_pauseBackend) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => SupportChatScreen(
+            state: widget.state,
+            topic: topic,
+            initialMessage: '$topic on order #${asString(order['orderCode'])}.',
+          ),
+        ),
+      );
+      return;
+    }
+
     try {
       final res = await widget.state.api.post('/v1/support/tickets', body: {
         'topic': topic,
@@ -129,10 +154,13 @@ class _SupportScreenState extends State<SupportScreen> {
     }
   }
 
-  void _chat() {
+  void _chat({String? initialMessage}) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SupportChatScreen(state: widget.state),
+        builder: (_) => SupportChatScreen(
+          state: widget.state,
+          initialMessage: initialMessage,
+        ),
       ),
     );
   }
@@ -157,11 +185,11 @@ class _SupportScreenState extends State<SupportScreen> {
             _buildHeader(context, firstName(asString(me['fullName']))),
             Padding(
               padding: EdgeInsets.fromLTRB(
-                20,
-                20,
-                20,
-                28 + MediaQuery.of(context).padding.bottom,
-              ),
+  16,
+  0,
+  16,
+  6 + MediaQuery.of(context).padding.bottom,
+),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -172,8 +200,8 @@ class _SupportScreenState extends State<SupportScreen> {
                         child: _QuickActionCard(
                           icon: LucideIcons.messageCircle,
                           title: 'Chat',
-                          subtitle: 'Reply in ~2 min',
-                          onTap: _chat,
+                          subtitle: 'Instant reply',
+                          onTap: () => _chat(),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -306,7 +334,7 @@ class _SupportScreenState extends State<SupportScreen> {
                                   ),
                                   const SizedBox(height: 14),
                                   ElevatedButton(
-                                    onPressed: _chat,
+                                    onPressed: () => _chat(),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: C.green,
                                       foregroundColor: Colors.white,
@@ -681,40 +709,201 @@ class SupportChatScreen extends StatefulWidget {
     required this.state,
     this.ticketId,
     this.topic = 'General help',
+    this.initialMessage,
   });
 
   final AppState state;
   final String? ticketId;
   final String topic;
+  final String? initialMessage;
 
   @override
   State<SupportChatScreen> createState() => _SupportChatScreenState();
 }
 
 class _SupportChatScreenState extends State<SupportChatScreen> {
+  static const List<(String label, String message)> _quickReplies = [
+    ('Payouts', 'I need help with my payout.'),
+    ('Verification', 'I need help with document verification.'),
+    ('Customer unreachable', 'The customer is not answering calls or messages.'),
+    ('Damaged veggies', 'Some vegetables/groceries are damaged or spoiled.'),
+    ('Missing items', 'Some items are missing from the hub crate.'),
+    ('Wrong address', 'The customer delivery address is incorrect.'),
+    ('Delivery OTP', 'Customer does not have the delivery OTP code.'),
+    ('Hub delay', 'There is a long waiting delay at the VP Nexues hub.'),
+    ('Change zone', 'I want to change my delivery hub or zone.'),
+  ];
+
+  static const List<String> _faqShortcuts = [
+    'When do I get paid?',
+    'Why is my document still in review?',
+    'Customer has no delivery code',
+    'How do I change my delivery zone?',
+    'What does accident cover include?',
+    'What if vegetables are damaged?',
+  ];
+
   String? _ticketId;
   List _messages = [];
   final _draft = TextEditingController();
+  final _scrollController = ScrollController();
   bool _busy = false;
   Timer? _poll;
+  int _localMsgCounter = 1;
 
   @override
   void initState() {
     super.initState();
     _ticketId = widget.ticketId;
-    _load();
-    _poll =
-        Timer.periodic(const Duration(seconds: 10), (_) => _load(quiet: true));
+
+    if (!_pauseBackend) {
+      _load();
+      _poll =
+          Timer.periodic(const Duration(seconds: 10), (_) => _load(quiet: true));
+    }
+
+    if (widget.initialMessage != null &&
+        widget.initialMessage!.trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _send(widget.initialMessage);
+      });
+    }
   }
 
   @override
   void dispose() {
     _poll?.cancel();
     _draft.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  String _generateInstantReply(String input) {
+    final text = input.toLowerCase();
+
+    if (text.contains('payout') ||
+        text.contains('paid') ||
+        text.contains('pay') ||
+        text.contains('salary') ||
+        text.contains('money') ||
+        text.contains('earning') ||
+        text.contains('bank') ||
+        text.contains('withdraw')) {
+      return 'VP Nexues weekly earnings (Mon–Sun) are credited every Monday by 6 PM. If you need funds earlier, use Instant Payout in the Earnings tab. For a failed transfer, share your order/payout date and we will check it.';
+    }
+
+    if (text.contains('verif') ||
+        text.contains('document') ||
+        text.contains('review') ||
+        text.contains('kyc') ||
+        text.contains('aadhaar') ||
+        text.contains('pan') ||
+        text.contains('license') ||
+        text.contains('rc')) {
+      return 'Document verification at VP Nexues usually takes 2–24 hours. Please make sure your uploaded photos are clear and not expired. You will get an in-app notification as soon as each document is approved.';
+    }
+
+    if (text.contains('unreachable') ||
+        text.contains('not answering') ||
+        text.contains('no response') ||
+        text.contains('call') ||
+        text.contains('phone')) {
+      return 'Please try calling the customer 3 times with a 2-minute gap and send an in-app message. If there is still no response after 10 minutes, mark "Customer Unreachable" on the order screen and return the groceries to your VP Nexues hub.';
+    }
+
+    if (text.contains('damage') ||
+        text.contains('spoil') ||
+        text.contains('rotten') ||
+        text.contains('leak') ||
+        text.contains('broken') ||
+        text.contains('veggie') ||
+        text.contains('vegetable') ||
+        text.contains('fresh')) {
+      return 'Sorry about that! Please take a quick photo of the damaged or spoiled produce and inform the customer if they are present. Do not pay out of pocket — return the affected items to the VP Nexues hub so we can log a quality replacement.';
+    }
+
+    if (text.contains('missing') ||
+        text.contains('short') ||
+        text.contains('crate') ||
+        text.contains('bag') ||
+        text.contains('item')) {
+      return 'If an item is missing before pickup, notify the VP Nexues hub supervisor immediately before swiping Picked Up. If you already left the hub, let the customer know and we will issue an instant refund or re-dispatch from our end.';
+    }
+
+    if (text.contains('address') ||
+        text.contains('location') ||
+        text.contains('map') ||
+        text.contains('pin') ||
+        text.contains('wrong')) {
+      return 'Call the customer to confirm the exact landmark or gate. If the new drop point is within 1 km, you can deliver and extra distance pay will be adjusted. If it is farther away, do not travel without support approval.';
+    }
+
+    if (text.contains('otp') ||
+        text.contains('code') ||
+        text.contains('delivery code')) {
+      return 'Ask the customer to check the VP Nexues order screen or their SMS for the 4-digit delivery code. If they still cannot find it, use the "Verify without OTP" option on the handover screen after confirming their name.';
+    }
+
+    if (text.contains('hub') ||
+        text.contains('delay') ||
+        text.contains('wait') ||
+        text.contains('packing') ||
+        text.contains('late')) {
+      return 'Thanks for letting us know about the VP Nexues hub delay. Your wait time is tracked automatically once you mark "Arrived at Hub" so your delivery rating will not be affected.';
+    }
+
+    if (text.contains('zone') ||
+        text.contains('area') ||
+        text.contains('city') ||
+        text.contains('radius') ||
+        text.contains('shift')) {
+      return 'To update your delivery area, go to Settings → City, hub & delivery radius. Radius updates apply immediately, while VP Nexues hub or city transfers are reviewed within 24 hours.';
+    }
+
+    if (text.contains('accident') ||
+        text.contains('insurance') ||
+        text.contains('cover') ||
+        text.contains('emergency') ||
+        text.contains('sos') ||
+        text.contains('hurt') ||
+        text.contains('police') ||
+        text.contains('crash')) {
+      return 'Your safety comes first. You are covered under VP Nexues partner accident cover while online and on active orders. For immediate emergencies, tap the red SOS button on the Support screen.';
+    }
+
+    if (text.contains('hi') ||
+        text.contains('hello') ||
+        text.contains('hey') ||
+        text.contains('good morning') ||
+        text.contains('good evening')) {
+      return 'Hello! Welcome to VP Nexues Partner Support. How can I help you with your deliveries, hub pickup, documents, or payouts today?';
+    }
+
+    if (text.contains('thank') ||
+        text.contains('ok') ||
+        text.contains('okay') ||
+        text.contains('great') ||
+        text.contains('done')) {
+      return 'You’re welcome! Ride safe and let us know anytime if you need help with a VP Nexues delivery.';
+    }
+
+    return 'Got it! We’ve noted your message: "$input". You can also tap one of the quick options or FAQ shortcuts below for instant VP Nexues partner guidance.';
+  }
+
   Future<void> _load({bool quiet = false}) async {
+    if (_pauseBackend) return;
+
     try {
       if (_ticketId == null) {
         final res = await widget.state.api.get('/v1/support/tickets');
@@ -750,6 +939,31 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   Future<void> _send([String? text]) async {
     final msg = (text ?? _draft.text).trim();
     if (msg.isEmpty || _busy) return;
+
+    _draft.clear();
+
+    if (_pauseBackend) {
+      final now = DateTime.now().toIso8601String();
+      final userMsg = <String, dynamic>{
+        'id': 'local_${_localMsgCounter++}',
+        'sender': 'partner',
+        'body': msg,
+        'createdAt': now,
+      };
+      final botReply = <String, dynamic>{
+        'id': 'local_${_localMsgCounter++}',
+        'sender': 'bot',
+        'body': _generateInstantReply(msg),
+        'createdAt': now,
+      };
+
+      setState(() {
+        _messages = [..._messages, userMsg, botReply];
+      });
+      _scrollToBottom();
+      return;
+    }
+
     setState(() => _busy = true);
     try {
       if (_ticketId == null) {
@@ -773,8 +987,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         }
       }
       if (!mounted) return;
-      _draft.clear();
       setState(() {});
+      _scrollToBottom();
     } catch (e) {
       if (mounted) {
         showToast(
@@ -791,11 +1005,11 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   Widget build(BuildContext context) {
     final me = widget.state.partner ?? {};
     final topPad = MediaQuery.of(context).padding.top;
-    final greeting = {
+    final greeting = <String, dynamic>{
       'id': '0',
       'sender': 'bot',
       'body':
-          'Hi ${firstName(asString(me['fullName']))}. Tell us what you need help with — a delivery, a payout or your documents — and a support agent will reply here.',
+          'Hi ${firstName(asString(me['fullName']))}! Welcome to VP Nexues Partner Support. Ask about a vegetable/grocery delivery, hub delay, OTP, documents, or payouts — we’ll reply right away.',
       'createdAt': '',
     };
     final all = [greeting, ..._messages];
@@ -843,7 +1057,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Support chat',
+                          'VP Nexues Support',
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 19,
@@ -853,9 +1067,11 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _ticketId != null
-                              ? 'Agents usually reply within a few minutes'
-                              : 'Start a conversation',
+                          _pauseBackend
+                              ? 'Instant support assistant'
+                              : (_ticketId != null
+                                  ? 'Agents usually reply within a few minutes'
+                                  : 'Start a conversation'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -875,6 +1091,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           // Messages
           Expanded(
             child: ListView.separated(
+              controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
               physics: const ClampingScrollPhysics(),
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -931,7 +1148,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             ),
           ),
 
-          // Quick replies + Composer
+          // Quick replies + FAQ shortcuts + Composer
           Container(
             decoration: BoxDecoration(
               color: C.bg,
@@ -939,47 +1156,92 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             ),
             padding: EdgeInsets.fromLTRB(
               16,
-              10,
+              0,
               16,
-              12 + MediaQuery.of(context).padding.bottom,
+              6 + MediaQuery.of(context).padding.bottom,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    for (var i = 0; i < 2; i++) ...[
-                      if (i > 0) const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _busy
-                              ? null
-                              : () => _send(
-                                    'I need help with ${['verification', 'payouts'][i]}.',
-                                  ),
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: C.green,
-                            side: const BorderSide(color: C.line),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+            child: Transform.translate(
+  offset: const Offset(0, -8),
+  child: Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+                // Quick issue topics
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _quickReplies.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final item = _quickReplies[i];
+                      return OutlinedButton(
+                        onPressed: _busy ? null : () => _send(item.$2),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: C.green,
+                          side: const BorderSide(color: C.line),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          item.$1,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 0),
+
+                // FAQ question shortcuts
+                SizedBox(
+                  height: 40,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _faqShortcuts.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final question = _faqShortcuts[i];
+                      return InkWell(
+                        onTap: _busy ? null : () => _send(question),
+                        borderRadius: BorderRadius.circular(18),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEF5DB),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: const Color(0xFFDDEBC3),
                             ),
                           ),
                           child: Text(
-                            ['Verification', 'Payouts'][i],
+                            question,
                             style: const TextStyle(
                               fontFamily: 'Inter',
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: C.ink,
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ],
+                      );
+                    },
+                  ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
+
+                // Message composer
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -1046,6 +1308,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               ],
             ),
           ),
+          )
         ],
       ),
     );
