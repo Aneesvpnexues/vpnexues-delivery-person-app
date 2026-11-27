@@ -28,6 +28,12 @@ Future<void> main() async {
 class PartnerApp extends StatelessWidget {
   const PartnerApp({super.key, required this.state});
 
+  /// Canonical app title used by the localized build (HEAD).
+  static const String title = 'VP Nexues Partner';
+
+  /// Compact branding retained from origin/anees.
+  static const String legacyTitle = 'VPNEXUES Partner';
+
   final AppState state;
 
   @override
@@ -38,7 +44,7 @@ class PartnerApp extends StatelessWidget {
       listenable: state,
       builder: (context, _) {
         return MaterialApp(
-          title: 'VP Nexues Partner',
+          title: title,
           debugShowCheckedModeBanner: false,
           theme: buildTheme(),
           locale: state.locale,

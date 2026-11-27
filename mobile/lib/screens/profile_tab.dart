@@ -287,10 +287,13 @@ class _ProfileTabState extends State<ProfileTab> {
                 title: l.sosContacts,
                 onTap: () => _push(SosScreen(state: widget.state)),
               ),
-              _Row(
-                icon: LucideIcons.info,
-                title: l.aboutApp,
-                onTap: () => _push(AboutScreen(state: widget.state)),
+              Tooltip(
+                message: 'About VPNEXUES',
+                child: _Row(
+                  icon: LucideIcons.info,
+                  title: l.aboutApp,
+                  onTap: () => _push(AboutScreen(state: widget.state)),
+                ),
               ),
               _Row(
                 icon: LucideIcons.logOut,

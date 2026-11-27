@@ -6,3 +6,9 @@ dist
 *.log
 .git
 deploy
+target/
+uploads/
+*.err
+.pgdata/
+pg/
+.pgbin/

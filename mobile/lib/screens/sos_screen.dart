@@ -227,7 +227,7 @@ class _SosScreenState extends State<SosScreen> {
             ),
           ),
           const DTxt(
-            'Holding sends your location to the VP Nexues safety team. For immediate danger, also call 112.',
+            'Holding sends your location to the VPNEXUES safety team. For immediate danger, also call 112.',
             x: 62,
             y: 321,
             w: 288,

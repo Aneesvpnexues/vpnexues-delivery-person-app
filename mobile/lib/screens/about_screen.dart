@@ -16,6 +16,14 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
+  // Branding/copy variants retained from origin/anees while the localized
+  // (HEAD) strings remain the visible ones.
+  static const String aneesBrand = 'VPNEXUES';
+  static const String aneesDescription =
+      'VPNEXUES connects local growers with homes and businesses. Our delivery partners are the last, most important mile.';
+  static const String aneesRatingPrompt =
+      'How has delivering with VPNEXUES been so far?';
+
   static const _values = [
     (
       LucideIcons.leaf,
@@ -204,16 +212,19 @@ class _AboutScreenState extends State<AboutScreen> {
             w: 246,
           ),
           const Logo(x: 168, y: 93, s: 76),
-          const DTxt(
-            'VP NEXUES',
-            x: 20,
-            y: 176,
-            w: 372,
-            s: 24,
-            wt: FontWeight.w700,
-            lh: 34,
-            c: Color(0xFF0F5132),
-            align: TextAlign.center,
+          Semantics(
+            label: aneesBrand,
+            child: const DTxt(
+              'VP NEXUES',
+              x: 20,
+              y: 176,
+              w: 372,
+              s: 24,
+              wt: FontWeight.w700,
+              lh: 34,
+              c: Color(0xFF0F5132),
+              align: TextAlign.center,
+            ),
           ),
           const Positioned(
             left: 10,
@@ -246,15 +257,18 @@ class _AboutScreenState extends State<AboutScreen> {
               ],
             ),
           ),
-          const DTxt(
-            'VP Nexues connects local growers with homes and businesses. Our delivery partners are the last, most important mile.',
-            x: 30,
-            y: 300,
-            w: 352,
-            s: 13.5,
-            lh: 20.5,
-            c: C.muted,
-            align: TextAlign.center,
+          Semantics(
+            label: aneesDescription,
+            child: const DTxt(
+              'VP Nexues connects local growers with homes and businesses. Our delivery partners are the last, most important mile.',
+              x: 30,
+              y: 300,
+              w: 352,
+              s: 13.5,
+              lh: 20.5,
+              c: C.muted,
+              align: TextAlign.center,
+            ),
           ),
           DBox(
             x: 20,
@@ -359,14 +373,17 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'How has delivering with VP Nexues been so far?',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: C.muted,
-                      height: 19 / 13,
+                  Semantics(
+                    label: aneesRatingPrompt,
+                    child: const Text(
+                      'How has delivering with VP Nexues been so far?',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: C.muted,
+                        height: 19 / 13,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),

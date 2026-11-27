@@ -393,3 +393,115 @@ class _SplashPrimaryButton extends StatelessWidget {
     );
   }
 }
+
+/// Fixed-canvas splash design retained from origin/anees. The responsive
+/// [SplashScreen] above is the active implementation; this alternate keeps
+/// the original absolute-position artwork/branding and loading state intact.
+class DesignCanvasSplash extends StatelessWidget {
+  const DesignCanvasSplash({
+    super.key,
+    this.state,
+    this.loading = false,
+  });
+
+  final AppState? state;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: DesignCanvas(
+        child: Stack(
+          children: [
+            const DSvg('assets/glow-top.svg', x: 190, y: -150, w: 370, h: 370),
+            const DSvg('assets/glow-soft.svg', x: -150, y: 250, w: 330, h: 330),
+            const DSvg('assets/leaf-deco.svg', x: 358, y: 90, w: 60, h: 90),
+            const CornerLeaves(),
+            const Logo(x: 48, y: 56, s: 68),
+            Positioned(
+              left: 134,
+              top: 56,
+              width: 262,
+              height: 68,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'VPNEXUES',
+                        style: TextStyle(fontFamily: 'Inter', fontSize: 30, fontWeight: FontWeight.w700, height: 1.15, color: C.green),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                        decoration: BoxDecoration(color: const Color(0xFFFFCD24), borderRadius: BorderRadius.circular(12)),
+                        child: const Text(
+                          'Delivery partner app',
+                          style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, height: 1.2, color: Color(0xFF3A3E34)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const DSvg('assets/illustration-scooter.svg', x: 105, y: 234, w: 200, h: 232),
+            Positioned(
+              left: 47.7,
+              top: 540,
+              width: 244,
+              child: const GradientText(
+                'Fresh Deliveries',
+                style: TextStyle(fontFamily: 'Inter', fontSize: 50, fontWeight: FontWeight.w700, height: 1, letterSpacing: -1),
+                gradient: LinearGradient(colors: [Color(0xFF247947), Color(0xFFE9D231)]),
+              ),
+            ),
+            const DTxt('Delivery Partner App', x: 47.7, y: 653, w: 260, s: 24, wt: FontWeight.w700, lh: 36, c: C.inkSoft),
+            if (loading)
+              const Positioned(
+                left: 186,
+                top: 720,
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(strokeWidth: 2.6, color: C.green),
+                ),
+              )
+            else ...[
+              PrimaryButton(
+                y: 735,
+                label: 'GET STARTED',
+                bg: C.yellow,
+                color: C.green,
+                onTap: state == null
+                    ? null
+                    : () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => SignupScreen(state: state!)),
+                        ),
+              ),
+              DTxt(
+                'I ALREADY HAVE AN ACCOUNT',
+                x: 30,
+                y: 821.5,
+                w: 352,
+                s: 14,
+                wt: FontWeight.w700,
+                lh: 21,
+                c: C.green,
+                align: TextAlign.center,
+                onTap: state == null
+                    ? null
+                    : () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => LoginScreen(state: state!)),
+                        ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
