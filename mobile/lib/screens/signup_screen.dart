@@ -145,7 +145,6 @@ class _SignupScreenState extends State<SignupScreen> {
     {'id': -43, 'name': 'Leh', 'state': 'Ladakh'},
   ];
 
-
   @override
   void initState() {
     super.initState();
@@ -425,7 +424,7 @@ class _SignupScreenState extends State<SignupScreen> {
         final res = await widget.state.signupStart(
           fullName: name,
           phone: phone,
-          cityId: effectiveCityId!,
+          cityId: effectiveCityId,
           vehicleType: vehicles.firstWhere((v) => v.$1 == _vehicle).$2,
           referralCode: _ref.text.trim(),
         );
@@ -466,7 +465,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 return await widget.state.signupStart(
                   fullName: name,
                   phone: phone,
-                  cityId: effectiveCityId!,
+                  cityId: effectiveCityId,
                   vehicleType: vehicles.firstWhere((v) => v.$1 == _vehicle).$2,
                   referralCode: _ref.text.trim(),
                 );
@@ -1317,6 +1316,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     );
   }
+
   /// Legacy picker opener from origin/anees (unused by the responsive UI).
   void _openCityPicker() {
     FocusScope.of(context).unfocus();
@@ -1371,6 +1371,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   /// Original absolute-position design from origin/anees, kept for
   /// reference (not rendered by the responsive [build] above).
+  // ignore: unused_element
   Widget _buildLegacySignupDesign() {
     final cities = widget.state.cities;
 
