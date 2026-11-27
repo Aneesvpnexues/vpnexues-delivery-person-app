@@ -339,7 +339,7 @@ class _UploadDocsScreenState extends State<UploadDocsScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
-        gradient: kGrad,
+        color: C.green,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
@@ -649,7 +649,7 @@ class _DocUploadCard extends StatelessWidget {
       height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        gradient: kGrad,
+        color: C.green,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -898,7 +898,7 @@ class _DocsPrimaryButton extends StatelessWidget {
           child: Ink(
             height: 56,
             decoration: BoxDecoration(
-              gradient: kGrad,
+              color: C.green,
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(

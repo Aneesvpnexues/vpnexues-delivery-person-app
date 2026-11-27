@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -159,6 +161,441 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: C.bg,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(context),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    22,
+                    20,
+                    28 + MediaQuery.of(context).padding.bottom,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Tagline
+                      const Text(
+                        'From the farm to the doorstep,',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 21,
+                          fontWeight: FontWeight.w700,
+                          color: C.ink,
+                          height: 29 / 21,
+                        ),
+                      ),
+                      const GradientText(
+                        'the same day.',
+                        align: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 21,
+                          fontWeight: FontWeight.w700,
+                          height: 29 / 21,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          'VP Nexues connects local growers with homes and businesses. Our delivery partners are the last, most important mile.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13.5,
+                            height: 20.5 / 13.5,
+                            color: C.muted,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+
+                      // Values card
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: C.line),
+                          boxShadow: sh(8, 20, .04),
+                        ),
+                        child: Column(
+                          children: [
+                            for (var i = 0; i < _values.length; i++) ...[
+                              if (i > 0)
+                                const Divider(
+                                  height: 1,
+                                  thickness: 1,
+                                  indent: 16,
+                                  endIndent: 16,
+                                  color: C.tint5,
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: _values[i].$2,
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Icon(
+                                        _values[i].$1,
+                                        size: 20,
+                                        color: _values[i].$3,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _values[i].$4,
+                                            style: const TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: C.ink,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            _values[i].$5,
+                                            style: const TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 12,
+                                              color: C.muted,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Links card
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: C.line),
+                          boxShadow: sh(8, 20, .04),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Column(
+                              children: [
+                                for (var i = 0; i < _links.length; i++) ...[
+                                  if (i > 0)
+                                    const Divider(
+                                      height: 1,
+                                      thickness: 1,
+                                      indent: 16,
+                                      endIndent: 16,
+                                      color: C.tint5,
+                                    ),
+                                  InkWell(
+                                    onTap: () => showToast(
+                                      context,
+                                      '${_links[i].$1} will open here once it’s published',
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 15,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  _links[i].$1,
+                                                  style: const TextStyle(
+                                                    fontFamily: 'Inter',
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: C.ink,
+                                                  ),
+                                                ),
+                                                if (_links[i].$2 != null) ...[
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    _links[i].$2!,
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Inter',
+                                                      fontSize: 12,
+                                                      color: C.muted,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                          const Icon(
+                                            LucideIcons.chevronRight,
+                                            size: 16,
+                                            color: Color(0xFF8A988F),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Rate button
+                      SizedBox(
+                        height: 54,
+                        child: OutlinedButton.icon(
+                          onPressed: () => setState(() => _rate = true),
+                          icon: const Icon(
+                            LucideIcons.star,
+                            size: 18,
+                            color: C.green,
+                          ),
+                          label: const Text(
+                            'RATE THE PARTNER APP',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                              color: C.green,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            side: const BorderSide(color: C.line, width: 1.3),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          if (_rate)
+            Modal(
+              onClose: () => setState(() => _rate = false),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Rate the partner app',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: C.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Semantics(
+                    label: aneesRatingPrompt,
+                    child: const Text(
+                      'How has delivering with VP Nexues been so far?',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: C.muted,
+                        height: 19 / 13,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var n = 1; n <= 5; n++)
+                        GestureDetector(
+                          onTap: () => setState(() => _stars = n),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 5),
+                            child: Icon(
+                              LucideIcons.star,
+                              size: 34,
+                              color: n <= _stars
+                                  ? const Color(0xFFE0B021)
+                                  : const Color(0xFFC9D3CB),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: _submitRating,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: C.green,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'SUBMIT RATING',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(36)),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF083F2A), Color(0xFF1F7945)],
+          ),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: 15,
+              top: 24,
+              width: 90,
+              height: 130,
+              child: Transform.rotate(
+                angle: 25 * math.pi / 180,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0x3878B43C),
+                    borderRadius: BorderRadius.circular(65),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(20, topPad + 14, 20, 24),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Material(
+                        color: const Color(0x24FFFFFF),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => Navigator.of(context).maybePop(),
+                          child: const SizedBox(
+                            width: 42,
+                            height: 42,
+                            child: Icon(
+                              LucideIcons.arrowLeft,
+                              size: 19,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Text(
+                          'About',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  const SizedBox(
+                    width: 76,
+                    height: 76,
+                    child: Stack(
+                      children: [
+                        Logo(x: 0, y: 0, s: 76),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'VP NEXUES',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _ratingButton() {
     return Btn(
       w: 372,
@@ -170,8 +607,8 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  // ignore: unused_element
+  Widget _buildFixedCanvasDesign(BuildContext context) {
     return DesignCanvas(
       child: Stack(
         children: [

@@ -46,10 +46,16 @@ List<BoxShadow> sh(double y, double blur, double opacity, [double x = 0]) => [
 
 /// 412x915 design canvas, uniformly scaled and centred like the original Phone.tsx.
 class DesignCanvas extends StatelessWidget {
-  const DesignCanvas({super.key, required this.child, this.background});
+  const DesignCanvas({
+    super.key,
+    required this.child,
+    this.background,
+    this.bottomNav,
+  });
 
   final Widget child;
   final Color? background;
+  final Widget? bottomNav;
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +98,7 @@ class DesignCanvas extends StatelessWidget {
                 ),
               ),
             ),
+            if (bottomNav != null) bottomNav!,
           ],
         ),
       );
@@ -793,50 +800,70 @@ class BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return DBox(
-      x: 20,
-      y: 816,
-      w: 372,
-      h: 68,
-      r: 26,
-      bg: C.green,
-      shadow: sh(12, 24, .2),
-      child: Stack(
-        children: [
-          for (var i = 0; i < tabs.length; i++)
-            Positioned(
-              left: 17 + i * 90.0,
-              top: 7,
-              width: 68,
-              height: 54,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onTap(tabs[i].$1),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: tabs[i].$1 == active ? const Color(0xFF246849) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(tabs[i].$3, size: 20, color: tabs[i].$1 == active ? C.yellow : const Color(0xFFCEE3D0)),
-                      const SizedBox(height: 4),
-                      Text(
-                        _label(l, tabs[i].$1),
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: tabs[i].$1 == active ? C.yellow : const Color(0xFFCEE3D0),
-                        ),
+
+    return Positioned(
+      left: 20,
+      right: 20,
+      bottom: 16 + MediaQuery.of(context).padding.bottom,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Container(
+          height: 68,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 7,
+          ),
+          decoration: BoxDecoration(
+            color: C.green,
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: sh(12, 24, .2),
+          ),
+          child: Row(
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => onTap(tabs[i].$1),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: tabs[i].$1 == active
+                            ? const Color(0xFF246849)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(18),
                       ),
-                    ],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            tabs[i].$3,
+                            size: 20,
+                            color: tabs[i].$1 == active
+                                ? C.yellow
+                                : const Color(0xFFCEE3D0),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _label(l, tabs[i].$1),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: tabs[i].$1 == active
+                                  ? C.yellow
+                                  : const Color(0xFFCEE3D0),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

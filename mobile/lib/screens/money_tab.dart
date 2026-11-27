@@ -77,6 +77,12 @@ class _MoneyTabState extends State<MoneyTab> {
     final withdrawable = asInt(d?['availableBalancePaise']);
 
     return DesignCanvas(
+      bottomNav: _withdraw
+          ? null
+          : BottomNav(
+              active: 'earnings',
+              onTap: (k) => widget.onOpenTab({'home': 0, 'orders': 1, 'earnings': 2, 'profile': 3}[k] ?? 2),
+            ),
       child: Stack(
         children: [
           const Backdrop(),
@@ -232,11 +238,6 @@ class _MoneyTabState extends State<MoneyTab> {
                 ),
               ),
             ),
-          ),
-
-          BottomNav(
-            active: 'earnings',
-            onTap: (k) => widget.onOpenTab({'home': 0, 'orders': 1, 'earnings': 2, 'profile': 3}[k] ?? 2),
           ),
 
           if (_withdraw)

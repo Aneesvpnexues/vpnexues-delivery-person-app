@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -6,9 +8,9 @@ import '../core/format.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
+import 'about_screen.dart';
 import 'reset_password_screen.dart';
 import 'zone_screen.dart';
-import 'about_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, required this.state});
@@ -30,7 +32,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _load() async {
-    // Test mode: read settings locally without calling the backend.
     if (widget.state.isLocalizationTestMode) {
       setState(() {
         _s = Map<String, dynamic>.from(widget.state.settings);
@@ -39,21 +40,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    // Normal mode: load settings from the backend.
     try {
       final res = await widget.state.api.get('/v1/me/settings');
-
       if (!mounted) return;
-
       setState(() {
         _s = res is Map ? Map<String, dynamic>.from(res) : {};
         _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
-
       setState(() => _loading = false);
-
       showToast(
         context,
         e is ApiException
@@ -67,7 +63,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _update(String key, dynamic value) async {
     final previous = _s;
-
     setState(() {
       _s = {
         ...?_s,
@@ -75,25 +70,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       };
     });
 
-    // Test mode: update only local settings.
     if (widget.state.isLocalizationTestMode) {
       widget.state.updateLocalSettings({key: value});
       return;
     }
 
-    // Normal mode: save to backend.
     try {
-      await widget.state.api.patch(
-        '/v1/me/settings',
-        body: {key: value},
-      );
-
+      await widget.state.api.patch('/v1/me/settings', body: {key: value});
       widget.state.updateLocalSettings({key: value});
     } catch (e) {
       if (!mounted) return;
-
       setState(() => _s = previous);
-
       showToast(
         context,
         e is ApiException
@@ -103,421 +90,239 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _pushAndRefresh(Widget screen) async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+    if (mounted) {
+      setState(() {});
+      _load();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final me = widget.state.partner ?? {};
 
-    final city = me['city'] is Map
-        ? asString((me['city'] as Map)['name'])
-        : '';
-
+    final city =
+        me['city'] is Map ? asString((me['city'] as Map)['name']) : '';
     final hub = me['hub'] is Map
         ? asString((me['hub'] as Map)['name'], l.noHub)
         : l.noHub;
-
     final km = asInt(me['deliveryRadiusKm'], 5);
-
-    final navApp = asString(
-      _s?['navigationApp'],
-      'google_maps',
-    );
-
-    // The backend stores the selected language in the partners table.
-    // Therefore, use the partner profile as the source of truth.
+    final navApp = asString(_s?['navigationApp'], 'google_maps');
     final lang = asString(
-  widget.state.settings['language'],
-  asString(me['language'], 'en'),
-);
-
-    Widget toggle(String key) {
-      return ToggleSwitch(
-        on: _b(key),
-        onColor: C.green,
-        onChanged: (v) => _update(key, v),
-      );
-    }
-
-    return DesignCanvas(
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: SizedBox(
-          width: 412,
-          height: 960,
-          child: Stack(
-            children: [
-              const Backdrop(),
-
-          BackBar(title: l.settingsTitle),
-
-          DTxt(
-            l.secDeliveries,
-            x: 20,
-            y: 100,
-            s: 11,
-            wt: FontWeight.w700,
-            lh: 15.4,
-            c: C.accent,
-            ls: 1.2,
-          ),
-
-          DBox(
-            x: 20,
-            y: 125,
-            w: 372,
-            h: 180,
-            r: 24,
-            bg: Theme.of(context).colorScheme.surface,
-            border: Border.all(color: Theme.of(context).dividerColor),
-            shadow: sh(8, 20, .04),
-          ),
-
-          _row(
-            0,
-            icon: LucideIcons.zap,
-            title: l.autoAcceptTitle,
-            sub: l.autoAcceptSub,
-            right: toggle('autoAcceptNearby'),
-          ),
-
-          _row(
-            1,
-            icon: LucideIcons.mapPin,
-            title: l.zoneTitle,
-            sub: '$city · $hub · $km km',
-            right: const Icon(
-              LucideIcons.chevronRight,
-              size: 16,
-              color: Color(0xFF8A988F),
-            ),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ZoneScreen(state: widget.state),
-                ),
-              );
-            },
-          ),
-
-          _row(
-            2,
-            icon: LucideIcons.navigation,
-            title: l.navTitle,
-            sub: navApp == 'in_app'
-                ? l.navInApp
-                : l.navGoogleMaps,
-            right: ToggleSwitch(
-              on: navApp != 'in_app',
-              onColor: C.green,
-              onChanged: (v) {
-                _update(
-                  'navigationApp',
-                  v ? 'google_maps' : 'in_app',
-                );
-              },
-            ),
-          ),
-
-          DTxt(
-            l.secAlerts,
-            x: 20,
-            y: 317,
-            s: 11,
-            wt: FontWeight.w700,
-            lh: 15.4,
-            c: C.accent,
-            ls: 1.2,
-          ),
-
-          DBox(
-            x: 20,
-            y: 342,
-            w: 372,
-            h: 169,
-            r: 24,
-            bg: Theme.of(context).colorScheme.surface,
-            border: Border.all(color: Theme.of(context).dividerColor),
-            shadow: sh(8, 20, .04),
-          ),
-
-          _row(
-            0,
-            base: 342,
-            h: 56.3,
-            icon: LucideIcons.volume1,
-            title: l.newOrderSoundTitle,
-            sub: l.newOrderSoundSub,
-            right: toggle('newOrderSound'),
-          ),
-
-          _row(
-            1,
-            base: 342,
-            h: 56.3,
-            icon: LucideIcons.wallet,
-            title: l.payoutAlertsTitle,
-            right: toggle('payoutAlerts'),
-          ),
-
-          _row(
-            2,
-            base: 342,
-            h: 56.3,
-            icon: LucideIcons.star,
-            title: l.offersTitle,
-            right: toggle('offersCampaigns'),
-          ),
-
-          DTxt(
-            l.secApp,
-            x: 20,
-            y: 523,
-            s: 11,
-            wt: FontWeight.w700,
-            lh: 15.4,
-            c: C.accent,
-            ls: 1.2,
-          ),
-
-          DBox(
-            x: 20,
-            y: 549,
-            w: 372,
-            h: 168,
-            r: 24,
-            bg: Theme.of(context).colorScheme.surface,
-            border: Border.all(color: Theme.of(context).dividerColor),
-            shadow: sh(8, 20, .04),
-          ),
-
-          _row(
-            0,
-            base: 549,
-            h: 56,
-            icon: LucideIcons.globe,
-            title: l.languageTitle,
-            right: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  langLabel(lang),
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  LucideIcons.chevronRight,
-                  size: 16,
-                  color: Color(0xFF8A988F),
-                ),
-              ],
-            ),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => LanguageScreen(state: widget.state),
-                ),
-              );
-            },
-          ),
-
-          _row(
-            1,
-            base: 549,
-            h: 56,
-            icon: LucideIcons.moon,
-            title: l.darkModeTitle,
-            // Dark mode is not available yet. Keep the switch off and
-            // show an informational message when the user taps it.
-            right: ToggleSwitch(
-              on: false,
-              onColor: C.green,
-              onChanged: (_) {
-                showToast(context, 'Dark theme mode will be available soon.');
-              },
-            ),
-          ),
-
-          _row(
-            2,
-            base: 549,
-            h: 56,
-            icon: LucideIcons.activity,
-            title: l.dataSaverTitle,
-            sub: l.dataSaverSub,
-            right: toggle('dataSaver'),
-          ),
-
-          DTxt(
-            l.secSecurity,
-            x: 20,
-            y: 728,
-            s: 11,
-            wt: FontWeight.w700,
-            lh: 15.4,
-            c: C.accent,
-            ls: 1.2,
-          ),
-
-          DBox(
-            x: 20,
-            y: 754,
-            w: 372,
-            h: 126,
-            r: 24,
-            bg: Theme.of(context).colorScheme.surface,
-            border: Border.all(color: Theme.of(context).dividerColor),
-            shadow: sh(8, 20, .04),
-          ),
-
-          _row(
-            0,
-            base: 754,
-            h: 63,
-            icon: LucideIcons.lock,
-            title: l.changePasswordTitle,
-            right: const Icon(
-              LucideIcons.chevronRight,
-              size: 16,
-              color: Color(0xFF8A988F),
-            ),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ResetPasswordScreen(
-                    state: widget.state,
-                  ),
-                ),
-              );
-            },
-          ),
-
-          _row(
-            1,
-            base: 754,
-            h: 63,
-            icon: LucideIcons.shield,
-            title: l.fingerprintTitle,
-            right: toggle('fingerprintUnlock'),
-          ),
-
-              // About VP Nexues is placed below the Security card.
-              DTxt(
-                l.aboutApp,
-                x: 20,
-                y: 890,
-                w: 372,
-                s: 14,
-                wt: FontWeight.w700,
-                lh: 20,
-                c: C.green,
-                align: TextAlign.center,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => AboutScreen(state: widget.state),
-                    ),
-                  );
-                },
-              ),
-
-              if (_loading)
-                DTxt(
-                  l.loadingSettings,
-                  x: 80,
-                  y: 78,
-                  s: 11,
-                  lh: 15,
-                  c: C.muted,
-                ),
-            ],
-          ),
-        ),
-      ),
+      widget.state.settings['language'],
+      asString(me['language'], 'en'),
     );
-  }
 
-  Widget _row(
-    int i, {
-    double base = 125,
-    required IconData icon,
-    required String title,
-    String? sub,
-    required Widget right,
-    double h = 60,
-    VoidCallback? onTap,
-  }) {
-    return Positioned(
-      left: 36,
-      top: base + i * h,
-      width: 340,
-      height: h,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+    Widget toggle(String key) => ToggleSwitch(
+          on: _b(key),
+          onColor: C.green,
+          onChanged: (v) => _update(key, v),
+        );
+
+    return Scaffold(
+      backgroundColor: C.bg,
+      body: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              width: 32,
-              height: 32,
-              child: Center(
-                child: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-              ),
+            _SettingsHeader(
+              title: l.settingsTitle,
+              subtitle: _loading ? l.loadingSettings : null,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      softWrap: true,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13.5,
-                        height: 1.12,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurface,
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                22,
+                20,
+                28 + MediaQuery.of(context).padding.bottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Deliveries
+                  _SectionLabel(l.secDeliveries),
+                  const SizedBox(height: 10),
+                  _SettingsCard(
+                    rows: [
+                      _SettingRow(
+                        icon: LucideIcons.zap,
+                        title: l.autoAcceptTitle,
+                        sub: l.autoAcceptSub,
+                        right: toggle('autoAcceptNearby'),
                       ),
-                    ),
-                    if (sub != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        sub,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11,
-                          height: 1.15,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      _SettingRow(
+                        icon: LucideIcons.mapPin,
+                        title: l.zoneTitle,
+                        sub: city.isEmpty
+                            ? '$hub · $km km'
+                            : '$city · $hub · $km km',
+                        right: const Icon(
+                          LucideIcons.chevronRight,
+                          size: 16,
+                          color: Color(0xFF8A988F),
+                        ),
+                        onTap: () =>
+                            _pushAndRefresh(ZoneScreen(state: widget.state)),
+                      ),
+                      _SettingRow(
+                        icon: LucideIcons.navigation,
+                        title: l.navTitle,
+                        sub: navApp == 'in_app'
+                            ? l.navInApp
+                            : l.navGoogleMaps,
+                        right: ToggleSwitch(
+                          on: navApp != 'in_app',
+                          onColor: C.green,
+                          onChanged: (v) => _update(
+                            'navigationApp',
+                            v ? 'google_maps' : 'in_app',
+                          ),
                         ),
                       ),
                     ],
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 22),
+
+                  // Alerts
+                  _SectionLabel(l.secAlerts),
+                  const SizedBox(height: 10),
+                  _SettingsCard(
+                    rows: [
+                      _SettingRow(
+                        icon: LucideIcons.volume1,
+                        title: l.newOrderSoundTitle,
+                        sub: l.newOrderSoundSub,
+                        right: toggle('newOrderSound'),
+                      ),
+                      _SettingRow(
+                        icon: LucideIcons.wallet,
+                        title: l.payoutAlertsTitle,
+                        right: toggle('payoutAlerts'),
+                      ),
+                      _SettingRow(
+                        icon: LucideIcons.star,
+                        title: l.offersTitle,
+                        right: toggle('offersCampaigns'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+
+                  // App
+                  _SectionLabel(l.secApp),
+                  const SizedBox(height: 10),
+                  _SettingsCard(
+                    rows: [
+                      _SettingRow(
+                        icon: LucideIcons.globe,
+                        title: l.languageTitle,
+                        right: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              langLabel(lang),
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              LucideIcons.chevronRight,
+                              size: 16,
+                              color: Color(0xFF8A988F),
+                            ),
+                          ],
+                        ),
+                        onTap: () => _pushAndRefresh(
+                          LanguageScreen(state: widget.state),
+                        ),
+                      ),
+                      _SettingRow(
+                        icon: LucideIcons.moon,
+                        title: l.darkModeTitle,
+                        right: ToggleSwitch(
+                          on: false,
+                          onColor: C.green,
+                          onChanged: (_) => showToast(
+                            context,
+                            'Dark theme mode will be available soon.',
+                          ),
+                        ),
+                      ),
+                      _SettingRow(
+                        icon: LucideIcons.activity,
+                        title: l.dataSaverTitle,
+                        sub: l.dataSaverSub,
+                        right: toggle('dataSaver'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+
+                  // Security
+                  _SectionLabel(l.secSecurity),
+                  const SizedBox(height: 10),
+                  _SettingsCard(
+                    rows: [
+                      _SettingRow(
+                        icon: LucideIcons.lock,
+                        title: l.changePasswordTitle,
+                        right: const Icon(
+                          LucideIcons.chevronRight,
+                          size: 16,
+                          color: Color(0xFF8A988F),
+                        ),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ResetPasswordScreen(state: widget.state),
+                          ),
+                        ),
+                      ),
+                      _SettingRow(
+                        icon: LucideIcons.shield,
+                        title: l.fingerprintTitle,
+                        right: toggle('fingerprintUnlock'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+
+                  // About link
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AboutScreen(state: widget.state),
+                        ),
+                      ),
+                      child: Text(
+                        l.aboutApp,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: C.green,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            right,
           ],
         ),
       ),
     );
   }
-
 }
 
 class LanguageScreen extends StatefulWidget {
@@ -530,15 +335,13 @@ class LanguageScreen extends StatefulWidget {
 }
 
 class _LanguageScreenState extends State<LanguageScreen> {
-  // Keep this list aligned with the backend app_language enum.
-  // Supported languages: en, ta, hi, ml, te, kn.
   static const _langs = [
-    ('Aa', 'English', 'Default', 'en', false),
-    ('த', 'தமிழ்', 'Tamil', 'ta', false),
-    ('हि', 'हिन्दी', 'Hindi', 'hi', false),
-    ('മ', 'മലയാളം', 'Malayalam', 'ml', false),
-    ('తె', 'తెలుగు', 'Telugu', 'te', false),
-    ('ಕ', 'ಕನ್ನಡ', 'Kannada', 'kn', false),
+    ('Aa', 'English', 'Default', 'en'),
+    ('த', 'தமிழ்', 'Tamil', 'ta'),
+    ('हि', 'हिन्दी', 'Hindi', 'hi'),
+    ('മ', 'മലയാളം', 'Malayalam', 'ml'),
+    ('తె', 'తెలుగు', 'Telugu', 'te'),
+    ('ಕ', 'ಕನ್ನಡ', 'Kannada', 'kn'),
   ];
 
   String _sel = 'en';
@@ -548,98 +351,62 @@ class _LanguageScreenState extends State<LanguageScreen> {
   @override
   void initState() {
     super.initState();
-
-    // The selected language is stored on the partner profile.
     _sel = asString(
-  widget.state.isLocalizationTestMode
-      ? widget.state.settings['language']
-      : widget.state.partner?['language'],
-  'en',
-);
-
-    // Guard against an old/unsupported value being returned by local state.
+      widget.state.isLocalizationTestMode
+          ? widget.state.settings['language']
+          : widget.state.partner?['language'],
+      'en',
+    );
     if (!_langs.any((language) => language.$4 == _sel)) {
       _sel = 'en';
     }
-
-    _voice = asBool(
-      widget.state.settings['voiceNavigation'] ?? true,
-    );
-
+    _voice = asBool(widget.state.settings['voiceNavigation'] ?? true);
     _load();
   }
 
   Future<void> _load() async {
-    // Test mode: do not send API requests.
     if (widget.state.isLocalizationTestMode) {
       if (!mounted) return;
-
       setState(() {
-        _voice = asBool(
-          widget.state.settings['voiceNavigation'] ?? true,
-        );
+        _voice = asBool(widget.state.settings['voiceNavigation'] ?? true);
       });
-
       return;
     }
 
-    // Normal mode: get voice navigation preference from backend.
     try {
       final res = await widget.state.api.get('/v1/me/settings');
-
       if (!mounted) return;
-
       final m = res is Map
           ? Map<String, dynamic>.from(res)
           : <String, dynamic>{};
-
       if (m.containsKey('voiceNavigation')) {
-        setState(() {
-          _voice = asBool(m['voiceNavigation']);
-        });
+        setState(() => _voice = asBool(m['voiceNavigation']));
       }
     } catch (_) {}
   }
 
   Future<void> _apply() async {
     setState(() => _busy = true);
-
     try {
       if (widget.state.isLocalizationTestMode) {
-        // Test mode: update language locally.
         widget.state.updateLocalSettings({
           'language': _sel,
           'voiceNavigation': _voice,
         });
       } else {
-        // Language belongs to the partner profile, not partner_settings.
-        // PATCH /v1/me updates partners.language.
-        await widget.state.api.patch(
-          '/v1/me',
-          body: {'language': _sel},
-        );
-
-        // Voice navigation belongs to partner_settings.
-        // PATCH /v1/me/settings updates voiceNavigation.
+        await widget.state.api.patch('/v1/me', body: {'language': _sel});
         await widget.state.api.patch(
           '/v1/me/settings',
           body: {'voiceNavigation': _voice},
         );
-
-        // Reload the backend values so AppState reflects the saved profile
-        // language and settings.
         await widget.state.loadMe();
       }
 
       if (!mounted) return;
-
       showToast(
         context,
-        AppLocalizations.of(context).languageSetTo(
-          langLabel(_sel),
-        ),
+        AppLocalizations.of(context).languageSetTo(langLabel(_sel)),
       );
-
       Navigator.of(context).maybePop();
     } catch (e) {
       if (mounted) {
@@ -651,71 +418,171 @@ class _LanguageScreenState extends State<LanguageScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _busy = false);
-      }
+      if (mounted) setState(() => _busy = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
 
-    return DesignCanvas(
-      child: Stack(
+    return Scaffold(
+      backgroundColor: C.bg,
+      body: Column(
         children: [
-          const Backdrop(),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _SettingsHeader(title: l.appLanguageTitle),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          l.appLanguageDesc,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13.5,
+                            height: 19 / 13.5,
+                            color: C.muted,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
 
-          BackBar(title: l.appLanguageTitle),
+                        for (var i = 0; i < _langs.length; i++) ...[
+                          if (i > 0) const SizedBox(height: 10),
+                          _buildLangTile(_langs[i], cs),
+                        ],
+                        const SizedBox(height: 18),
 
-          DTxt(
-            l.appLanguageDesc,
-            x: 20,
-            y: 104,
-            w: 350,
-            s: 13.5,
-            lh: 19,
-            c: C.muted,
+                        // Voice navigation card
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: cs.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(color: cs.outlineVariant),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l.voiceNavTitle,
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: C.ink,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      l.voiceNavSub,
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 12,
+                                        color: C.muted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              ToggleSwitch(
+                                on: _voice,
+                                onColor: C.green,
+                                onChanged: (v) => setState(() => _voice = v),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
 
-        
-            
-Positioned(
-  left: 20,
-  top: 154,
-  width: 372,
-  height: 510,
-  child: ListView.separated(
-    padding: EdgeInsets.zero,
-    physics: const BouncingScrollPhysics(),
-    itemCount: _langs.length,
-    separatorBuilder: (_, __) =>
-        const SizedBox(height: 12),
-    itemBuilder: (context, i) {
-      final selected = _sel == _langs[i].$4;
+          // Pinned Apply button
+          Container(
+            decoration: BoxDecoration(
+              color: C.bg,
+              border: Border(top: BorderSide(color: C.line.withOpacity(0.7))),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              12,
+              20,
+              14 + MediaQuery.of(context).padding.bottom,
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton(
+                onPressed: _busy ? null : _apply,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: C.green,
+                  disabledBackgroundColor: C.green.withOpacity(0.6),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                child: _busy
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        l.apply,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _busy
-            ? null
-            : () {
-                setState(() {
-                  _sel = _langs[i].$4;
-                });
-              },
+  Widget _buildLangTile((String, String, String, String) lang, ColorScheme cs) {
+    final selected = _sel == lang.$4;
+
+    return Material(
+      color: selected ? cs.secondaryContainer : cs.surface,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: _busy ? null : () => setState(() => _sel = lang.$4),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          height: 73,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 15,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
           decoration: BoxDecoration(
-            color: selected
-                ? Theme.of(context).colorScheme.secondaryContainer
-                : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
               color: selected
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.35)
+                  ? cs.primary.withValues(alpha: 0.35)
                   : Theme.of(context).dividerColor,
             ),
           ),
@@ -726,44 +593,39 @@ Positioned(
                 height: 48,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: selected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  color: selected ? cs.primary : cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Text(
-                  _langs[i].$1,
+                  lang.$1,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: selected
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.primary,
+                    color: selected ? cs.onPrimary : cs.primary,
                   ),
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _langs[i].$2,
+                      lang.$2,
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 17,
+                        fontSize: 16.5,
                         fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: cs.onSurface,
                       ),
                     ),
                     Text(
-                      _langs[i].$3,
+                      lang.$3,
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: cs.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -772,69 +634,252 @@ Positioned(
               if (selected)
                 Icon(
                   LucideIcons.check,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
+                  size: 18,
+                  color: cs.primary,
                 ),
             ],
           ),
         ),
-      );
-    },
-  ),
-),
+      ),
+    );
+  }
+}
 
-          DBox(
-            x: 20,
-            y: 680,
-            w: 372,
-            h: 65,
-            r: 22,
-            bg: Theme.of(context).colorScheme.surfaceContainerHighest,
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
+class _SettingsHeader extends StatelessWidget {
+  const _SettingsHeader({required this.title, this.subtitle});
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF083F2A), Color(0xFF1F7945)],
+          ),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: 15,
+              top: 18,
+              width: 90,
+              height: 120,
+              child: Transform.rotate(
+                angle: 25 * math.pi / 180,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0x3878B43C),
+                    borderRadius: BorderRadius.circular(65),
+                  ),
+                ),
+              ),
             ),
-          ),
-
-          DTxt(
-            l.voiceNavTitle,
-            x: 36,
-            y: 694,
-            s: 14,
-            wt: FontWeight.w700,
-            lh: 20,
-          ),
-
-          DTxt(
-            l.voiceNavSub,
-            x: 36,
-            y: 715,
-            s: 12,
-            lh: 16.8,
-          ),
-
-          ToggleSwitch(
-            x: 325,
-            y: 698,
-            on: _voice,
-            onColor: C.green,
-            onChanged: (v) {
-              setState(() {
-                _voice = v;
-              });
-            },
-          ),
-
-          Positioned(
-            left: 20,
-            right: 20,
-            // Keep the button above DesignCanvas's 30px bottom safe area.
-            bottom: 40,
-            child: Btn(
-              label: _busy ? l.saving : l.apply,
-              onTap: _busy ? null : _apply,
+            Padding(
+              padding: EdgeInsets.fromLTRB(20, topPad + 14, 20, 22),
+              child: Row(
+                children: [
+                  Material(
+                    color: const Color(0x24FFFFFF),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => Navigator.of(context).maybePop(),
+                      child: const SizedBox(
+                        width: 42,
+                        height: 42,
+                        child: Icon(
+                          LucideIcons.arrowLeft,
+                          size: 19,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle!,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: Color(0xFFDFEEE0),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: C.accent,
+          letterSpacing: 1.2,
+          height: 15.4 / 11,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingRow {
+  const _SettingRow({
+    required this.icon,
+    required this.title,
+    this.sub,
+    required this.right,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? sub;
+  final Widget right;
+  final VoidCallback? onTap;
+}
+
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.rows});
+
+  final List<_SettingRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: sh(8, 20, .04),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Material(
+          color: Colors.transparent,
+          child: Column(
+            children: [
+              for (var i = 0; i < rows.length; i++) ...[
+                if (i > 0)
+                  const Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: C.tint5,
+                  ),
+                InkWell(
+                  onTap: rows[i].onTap,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 13,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEF5DB),
+                            borderRadius: BorderRadius.circular(11),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            rows[i].icon,
+                            size: 17,
+                            color: C.green,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                rows[i].title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                              if (rows[i].sub != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  rows[i].sub!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 11.5,
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        rows[i].right,
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

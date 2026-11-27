@@ -48,3 +48,6 @@ app.*.map.json
 .widget_preview/
 
 dist/
+# Ignore Java crash and replay logs
+hs_err_pid*.log
+replay_pid*.log
