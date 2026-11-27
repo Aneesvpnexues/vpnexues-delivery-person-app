@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ChevronDown, ChevronRight, ChevronUp, File, Landmark, Leaf, Lock, Map, MessageCircle, Navigation, Package, Phone as PhoneIcon, Plus, Search, Shield, ShieldCheck, Star, TriangleAlert, Wallet, Zap, type LucideIcon } from 'lucide-react'
 import Phone from '../components/Phone'
-import { Box, Btn, C, Field, Header, Ic, Logo, Modal, P, Pill, RoundBtn, Screen, T, Tile, card, pill, toast } from '../components/kit'
+import { Box, Btn, C, Field, Header, Ic, Logo, Modal, P, Pill, RoundBtn, Screen, T, Tile, card, pill, toast, useGoBack } from '../components/kit'
 import { api, showError } from '../api/client'
 import { firstName, initials, maskPhone, time, date, useApi, useSession } from '../api/session'
 import type { Notification, OrderListItem } from '../api/types'
@@ -107,6 +107,7 @@ export function Help() {
 type Msg = { id: number; sender: 'partner' | 'agent' | 'bot'; body: string; created_at: string }
 const TOPICS = ['Verification', 'Payouts']
 export function SupportChat() {
+  const nav = useNavigate()
   const { me } = useSession()
   const [params, setParams] = useSearchParams()
   const tickets = useApi<{ id: string; topic: string; status: string }[]>(params.get('ticket') ? null : '/v1/support/tickets')
@@ -143,13 +144,14 @@ export function SupportChat() {
   const greeting: Msg = { id: 0, sender: 'bot', body: `Hi ${firstName(me?.full_name) || 'there'}. Tell us what you need help with — a delivery, a payout or your documents — and a support agent will reply here.`, created_at: '' }
   return (
     <Phone>
-      <Header title="Support chat" to={P('1:3289')} />
+      <Box onClick={() => nav(P('1:3289'))} x={20} y={40} w={64} h={44} r={16} bg="#fff" style={{ font: '700 11px/16px Inter', color: C.ink }}>BACK</Box>
+      <T x={100} y={48} s={20} wt={700} lh={28}>Support chat</T>
       <T x={20} y={108} s={10.5} wt={700} lh={14} c={C.green}>{ticketId ? 'AGENTS USUALLY REPLY WITHIN A FEW MINUTES' : 'START A CONVERSATION'}</T>
-      <div className="scroll" style={{ position: 'absolute', left: 20, top: 134, width: 372, height: 600, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="scroll" style={{ position: 'absolute', left: 20, top: 142, width: 372, height: 540, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {[greeting, ...msgs].map((m) => {
           const mine = m.sender === 'partner'
           return (
-            <div key={m.id} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: mine ? 300 : 340, background: mine ? C.green : '#fff', color: mine ? '#fff' : C.ink, borderRadius: 20, padding: '12px 16px', font: '400 14.5px/22px Inter', flex: 'none' }}>
+            <div key={m.id} style={{ alignSelf: mine ? 'flex-end' : 'stretch', maxWidth: mine ? 300 : undefined, background: mine ? C.green : '#fff', color: mine ? '#fff' : C.ink, borderRadius: 20, padding: '12px 16px', font: '400 14.5px/22px Inter', flex: 'none' }}>
               {m.body}
               {m.created_at && <span style={{ display: 'block', font: '600 10.5px/14px Inter', opacity: 0.7, marginTop: 4 }}>{time(m.created_at)}</span>}
             </div>
@@ -157,13 +159,12 @@ export function SupportChat() {
         })}
         <div ref={end} />
       </div>
-      {TOPICS.map((k, i) => (
-        <Box key={k} onClick={() => void send(`I need help with ${k.toLowerCase()}.`, k)} x={20 + i * 122} y={748} w={114} h={36} r={18} bg="#e3ebde"
-          style={{ font: '700 12px/17px Inter', color: C.green }}>{k}</Box>
-      ))}
       <textarea aria-label="Message" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type your message…"
-        style={{ position: 'absolute', left: 20, top: 796, width: 274, height: 64, borderRadius: 20, border: `1px solid ${C.line}`, outline: 0, resize: 'none', background: '#fff', padding: '12px 18px', font: '400 14px/20px Inter', color: C.ink }} />
-      <Box onClick={() => void send(draft)} x={304} y={796} w={88} h={64} r={20} bg={C.green} style={{ font: '700 12px/17px Inter', color: '#fff' }}>{busy ? '…' : 'SEND'}</Box>
+        style={{ position: 'absolute', left: 20, top: 696, width: 274, height: 92, borderRadius: 20, border: 0, outline: 0, resize: 'none', background: '#fff', padding: '16px 18px', font: '400 13px/19px Inter', color: C.ink }} />
+      <Box onClick={() => void send(draft)} x={304} y={696} w={88} h={92} r={20} bg={C.green} style={{ font: '700 12px/17px Inter', color: '#fff' }}>{busy ? '…' : 'SEND'}</Box>
+      {TOPICS.map((k, i) => (
+        <Box key={k} onClick={() => void send(`I need help with ${k.toLowerCase()}.`, k)} x={20 + i * 192} y={812} w={180} h={52} r={20} bg={C.green} style={{ font: '700 13px/18px Inter', color: '#fff' }}>{k}</Box>
+      ))}
     </Phone>
   )
 }
@@ -340,7 +341,6 @@ export function SOS() {
 
 /* ---------------- About ---------------- */
 export function About() {
-  const nav = useNavigate()
   const [rate, setRate] = useState(false)
   const [stars, setStars] = useState(5)
   const values: { icon: LucideIcon; bg: string; ic?: string; a: string; b: string }[] = [
@@ -349,6 +349,7 @@ export function About() {
     { icon: Shield, bg: '#e0eff3', ic: '#145b73', a: 'Safety on every ride', b: 'One-tap SOS and accident cover while on duty.' },
   ]
   const links = [['Partner terms of service'], ['Privacy policy'], ['Grievance officer', 'Response within 15 days'], ['Open-source licences']]
+  const goBack = useGoBack(P('1:2301'))
   const submit = async () => {
     setRate(false)
     try { await api('/v1/app-rating', { body: { stars, appVersion: '0.1.0' } }); toast(`Thanks for the ${stars}-star rating!`) } catch (e) { showError(e) }
@@ -356,7 +357,7 @@ export function About() {
   return (
     <Screen ol="b">
       <Box x={0} y={0} w={412} h={220} bg="linear-gradient(180deg,#f1f6e3 0%,#f1f6e3 62%,#e4eed0 62%,#e4eed0 100%)" />
-      <RoundBtn icon={ArrowLeft} x={20} y={52} onClick={() => nav(-1)} />
+      <RoundBtn icon={ArrowLeft} x={20} y={52} onClick={goBack} />
       <T x={80} y={51} s={20} wt={700} lh={28}>About</T>
       <Logo x={168} y={93} s={76} />
       <T x={20} y={176} w={372} s={24} wt={700} lh={34} c="#0f5132" align="center">VP NEXUES</T>

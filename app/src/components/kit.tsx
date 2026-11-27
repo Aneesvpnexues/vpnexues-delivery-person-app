@@ -11,6 +11,19 @@ import { useSession } from '../api/session'
 /** Route path of a Figma frame id. */
 export const P = (id: string) => screens[id].path
 
+/**
+ * Back that always works: steps back in history when there is something to go back to,
+ * otherwise (fresh launch, reload, deep link) replaces with the fallback route instead of doing nothing.
+ */
+export function useGoBack(fallback: string = '/home') {
+  const nav = useNavigate()
+  return () => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0
+    if (idx > 0) nav(-1)
+    else nav(fallback, { replace: true })
+  }
+}
+
 /* ---------- partner state (online toggle, language) now comes from the signed-in session ---------- */
 export function useDemo() {
   const s = useSession()
@@ -152,9 +165,10 @@ export function BottomNav({ active }: { active: (typeof tabs)[number]['key'] }) 
 /* ---------- headers ---------- */
 export function Header({ title, to, right, y = 41 }: { title?: string; to?: string; right?: ReactNode; y?: number }) {
   const nav = useNavigate()
+  const back = useGoBack()
   return (
     <>
-      <RoundBtn icon={ArrowLeftIcon} x={20} y={y} onClick={() => (to ? nav(to) : nav(-1))} />
+      <RoundBtn icon={ArrowLeftIcon} x={20} y={y} onClick={() => (to ? nav(to) : back())} />
       {title && <T x={80} y={y + 10} w={250} s={20} wt={700} lh={28}>{title}</T>}
       {right}
     </>

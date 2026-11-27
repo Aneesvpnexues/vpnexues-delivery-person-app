@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, LocateFixed } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, LocateFixed } from 'lucide-react'
 import Phone from '../components/Phone'
-import { Box, Btn, C, Header, LinkText, P, Pill, RoundBtn, Screen, T, card, pill, toast } from '../components/kit'
-import { MapArt } from '../components/ui'
+import { Box, Btn, C, Ic, LinkText, P, Pill, RoundBtn, Screen, T, card, pill, toast, useGoBack } from '../components/kit'
+import { topBleed } from '../components/ui'
 import { api, showError } from '../api/client'
 import { useApi, useSession } from '../api/session'
 import mapZone from '../assets/art/map-zone.png'
@@ -12,6 +12,7 @@ type ZoneData = { delivery_radius_km: number; hub_id: string | null; hub_name: s
 
 export function Zone() {
   const nav = useNavigate()
+  const goBack = useGoBack(P('1:814'))
   const { refreshMe } = useSession()
   const z = useApi<ZoneData>('/v1/me/zone')
   const [km, setKm] = useState(5)
@@ -31,8 +32,8 @@ export function Zone() {
   }
   return (
     <Screen>
-      <MapArt src={mapZone} h={322} alt="Zone map" />
-      <RoundBtn icon={ArrowLeft} x={20} y={48} onClick={() => nav(-1)} />
+      <img src={mapZone} alt="Zone map" style={topBleed(322)} />
+      <RoundBtn icon={ArrowLeft} x={20} y={48} onClick={goBack} />
       <RoundBtn icon={LocateFixed} x={344} y={48} onClick={() => void z.reload().then(() => toast('Zone refreshed'))} />
       <Pill x={20} y={279} w={155} label={`${km} km service radius`} color="#fff" dot="#b6dc45" />
 
@@ -69,6 +70,7 @@ export function Zone() {
 type City = { id: number; name: string; state: string }
 export function ChangeCity() {
   const nav = useNavigate()
+  const goBack = useGoBack(P('1:3906'))
   const { me } = useSession()
   const cities = useApi<City[]>('/v1/cities')
   const [cityId, setCityId] = useState<number | null>(me?.city.id ?? null)
@@ -89,7 +91,8 @@ export function ChangeCity() {
   }
   return (
     <Phone>
-      <Header title="Change city or hub" to={P('1:3906')} />
+      <Box onClick={goBack} x={12} y={44} w={48} h={44}><Ic icon={ChevronLeft} x={6} y={11} s={22} sw={3} c={C.ink} /></Box>
+      <T x={80} y={51} s={20} wt={700} lh={28}>Change city or hub</T>
       <T x={20} y={122} s={22} wt={700} lh={30}>Choose your delivery city</T>
       <T x={20} y={164} s={13} lh={18.2}>{`Current city: ${me?.city.name ?? '…'}`}</T>
       {(cities.data ?? []).slice(0, 3).map((c, i) => (
@@ -104,7 +107,7 @@ export function ChangeCity() {
       <T x={38} y={617} s={15} wt={700} lh={21}>Keep your current zone active</T>
       <T x={38} y={650} w={330} s={13.5} lh={19}>{`Your current ${me?.city.name ?? ''} zone stays unchanged until support confirms the move.`}</T>
       <Btn y={784} label={busy ? 'SENDING…' : 'SEND REQUEST TO SUPPORT'} onClick={() => !busy && void request()} />
-      <T x={20} y={860} w={372} s={14} wt={700} lh={20} align="center" onClick={() => nav(P('1:3906'))}>Keep my current location</T>
+      <T x={20} y={860} w={372} s={14} wt={700} lh={20} align="center" onClick={goBack}>Keep my current location</T>
     </Phone>
   )
 }
