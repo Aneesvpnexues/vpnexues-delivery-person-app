@@ -6,6 +6,7 @@ import '../core/format.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
 import 'order_detail_screen.dart';
+import 'zone_screen.dart';
 
 class OrdersTab extends StatefulWidget {
   const OrdersTab({super.key, required this.state, required this.onOpenTab});
@@ -172,7 +173,14 @@ class _OrdersTabState extends State<OrdersTab> {
             Positioned(
               left: 229,
               top: 735,
-              child: Btn(w: 163, kind: BtnKind.outline, label: 'MY ZONE', onTap: () => widget.onOpenTab(3)),
+              child: Btn(
+                w: 163,
+                kind: BtnKind.outline,
+                label: 'MY ZONE',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ZoneScreen(state: widget.state)),
+                ),
+              ),
             ),
           ],
 

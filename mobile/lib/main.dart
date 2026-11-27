@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart'; 
 
+
 import 'core/api_client.dart';
 import 'screens/root_gate.dart';
 import 'state/app_state.dart';
@@ -17,6 +18,7 @@ Future<void> main() async {
   final state = AppState(ApiClient(prefs));
   runApp(PartnerApp(state: state));
   state.boot();
+  
 }
 
 class PartnerApp extends StatelessWidget {
@@ -33,4 +35,5 @@ class PartnerApp extends StatelessWidget {
       home: RootGate(state: state),
     );
   }
+  
 }

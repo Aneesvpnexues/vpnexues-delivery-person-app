@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../core/api_client.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
+import 'privacy_policy_screen.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key, required this.state});
@@ -47,7 +48,15 @@ class _AboutScreenState extends State<AboutScreen> {
           height: h,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => showToast(context, '${_links[i].$1} will open here once it’s published'),
+            onTap: () {
+              if (_links[i].$1 == 'Privacy policy') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                );
+                return;
+              }
+              showToast(context, 'This content isn\'t available yet.');
+            },
             child: Row(
               children: [
                 Expanded(

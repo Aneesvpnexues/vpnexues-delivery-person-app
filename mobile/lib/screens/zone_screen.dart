@@ -85,7 +85,14 @@ class _ZoneScreenState extends State<ZoneScreen> {
       child: Stack(
         children: [
           DImg('assets/art/map-zone.png', x: 0, y: 0, w: 412, h: 322),
-          RoundBtn(icon: LucideIcons.arrowLeft, y: 48, onTap: () => Navigator.of(context).maybePop()),
+          RoundBtn(
+            icon: LucideIcons.arrowLeft,
+            x: 20,
+            y: 48,
+            onTap: () {
+              if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+            },
+          ),
           RoundBtn(
             icon: LucideIcons.locateFixed,
             x: 344,
