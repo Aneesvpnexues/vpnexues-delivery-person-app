@@ -18,5 +18,11 @@ desktop.ini
 .pgdata/
 pg/
 
-# Environment Variables
+# Environment variables and local secrets (Supabase/Firebase credentials) must
+# never be committed. Keep .env.example available as the shared template.
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*service-account*.json

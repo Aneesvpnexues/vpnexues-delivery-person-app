@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../core/api_client.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
+import 'firebase_phone_auth_screen.dart';
 import 'otp_screen.dart';
 import 'reset_password_screen.dart';
 import 'signup_screen.dart';
@@ -232,6 +233,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 const SizedBox(height: 18),
                                 _buildKeepLoggedInRow(),
+                                const SizedBox(height: 12),
+                                _buildFirebaseOtpLink(),
                               ],
                             ),
                           ),
@@ -774,6 +777,38 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  /// Firebase phone OTP entry point added on origin/rashi. It is kept alongside
+  /// the password and backend OTP flows so none of the sign-in options is lost.
+  Widget _buildFirebaseOtpLink() {
+    return Center(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const FirebasePhoneAuthScreen(),
+            ),
+          );
+        },
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Text(
+            'VERIFY WITH FIREBASE OTP',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              height: 1.4,
+              color: C.green,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Absolute-position design preserved from origin/anees.
   ///
   /// This is kept as an alternative layout (e.g. for a design preview or a
@@ -1106,6 +1141,26 @@ class _LoginScreenState extends State<LoginScreen> {
             onTap: () => showToast(
               context,
               'Fingerprint login arrives in a later version. Use your password for now.',
+            ),
+          ),
+
+          // Firebase OTP link from origin/rashi, positioned to fit this
+          // alternative fixed-canvas layout between the fingerprint row and
+          // the sign-up divider.
+          DTxt(
+            'VERIFY WITH FIREBASE OTP',
+            x: 20,
+            y: 668,
+            w: 372,
+            s: 13,
+            wt: FontWeight.w700,
+            lh: 18.2,
+            c: C.green,
+            align: TextAlign.center,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const FirebasePhoneAuthScreen(),
+              ),
             ),
           ),
 

@@ -3,6 +3,8 @@
 Backend for the VP Nexues delivery-partner app.
 **Node 22 · TypeScript · Fastify 5 · PostgreSQL 16**, packaged as one Docker image for **AWS App Runner or ECS Fargate**, with **RDS PostgreSQL**, **S3** for documents and **SNS** for OTP SMS.
 
+> The Spring Boot Java API is now authoritative. Its migration guards and the static comparison with the applied Supabase SQL are documented in [`docs/spring-supabase-schema-compatibility.md`](docs/spring-supabase-schema-compatibility.md). The Fastify notes below are preserved for history.
+
 ## Run locally
 
 ```bash

@@ -31,6 +31,12 @@ public class TrialService {
         if (!props.trialMode()) throw ApiException.notFound("Demo order");
         String pid = current.partnerId();
         return db.inTx(() -> {
+            Map<String, Object> open = db.one(
+                    "SELECT count(*) AS n FROM orders WHERE partner_id = ? AND customer_phone = '+919000000000' " +
+                            "AND status IN ('assigned','accepted','at_pickup','picked_up','arrived')", pid);
+            if (open != null && ((Number) open.get("n")).longValue() >= 3) {
+                throw ApiException.conflict("DEMO_LIMIT", "Finish your open demo orders before creating another");
+            }
             Map<String, Object> p = db.one("SELECT hub_id, city_id FROM partners WHERE id = ? FOR UPDATE", pid);
             if (p == null) throw ApiException.notFound("Partner");
             Object hubId = p.get("hubId");
@@ -59,6 +65,10 @@ public class TrialService {
                         id, i + 1, spec[i][0], Integer.parseInt(spec[i][1]), qr);
                 crates.add(c);
             }
+            db.update("INSERT INTO order_events (order_id, status, actor, note) VALUES (?, 'created', 'system', 'Trial order created')", id);
+            db.update("INSERT INTO order_events (order_id, status, actor, note) VALUES (?, 'assigned', 'system', 'Trial order assigned')", id);
+            db.update("INSERT INTO notifications (partner_id, category, title, body) VALUES (?, 'order', " +
+                    "'Trial order ready', 'A demo delivery is waiting for you. Accept it to explore the delivery flow.')", pid);
             return Json.map("orderId", id, "orderCode", o.get("orderCode"), "demoCode", DEMO_CODE, "crates", crates);
         });
     }

@@ -101,6 +101,21 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!--
+            Tests always use EmbeddedPostgres via @DynamicPropertySource. Override
+            any ambient datasource URL with a safe loopback placeholder so the
+            fail-closed Flyway guard sees a local target before the embedded URL
+            is installed. This never permits a remote migration target.
+          -->
+          <environmentVariables>
+            <SPRING_DATASOURCE_URL>jdbc:postgresql://localhost:5432/vpnexues</SPRING_DATASOURCE_URL>
+          </environmentVariables>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>

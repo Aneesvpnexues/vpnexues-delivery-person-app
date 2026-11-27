@@ -6,9 +6,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Map;
 
 /** Creates the first ops-console owner and an optional demo partner for local testing. */
@@ -18,6 +20,7 @@ public class DataSeeder implements ApplicationRunner {
 
     private final Db db;
     private final PasswordEncoder encoder;
+    private final Environment environment;
 
     @Value("${app.bootstrap-admin-email:}")
     private String adminEmail;
@@ -28,19 +31,27 @@ public class DataSeeder implements ApplicationRunner {
     @Value("${app.demo-seed:false}")
     private boolean demoSeed;
 
-    public DataSeeder(Db db, PasswordEncoder encoder) {
+    public DataSeeder(Db db, PasswordEncoder encoder, Environment environment) {
         this.db = db;
         this.encoder = encoder;
+        this.environment = environment;
     }
 
     @Override
     public void run(ApplicationArguments args) {
         try {
             bootstrapAdmin();
-            if (demoSeed) seedDemoPartner();
+            if (demoSeed && isLoopbackDevProfile()) seedDemoPartner();
         } catch (Exception e) {
             log.warn("Seeding skipped: {}", e.getMessage());
         }
+    }
+
+    /** Demo identities are only allowed in the explicit local profile on a loopback database. */
+    private boolean isLoopbackDevProfile() {
+        boolean local = Arrays.asList(environment.getActiveProfiles()).contains("local");
+        String url = environment.getProperty(MigrationSafetyEnvironmentPostProcessor.DATASOURCE_URL, "");
+        return local && MigrationSafetyEnvironmentPostProcessor.isLoopback(url);
     }
 
     private void bootstrapAdmin() {
@@ -70,6 +81,6 @@ public class DataSeeder implements ApplicationRunner {
                 "VALUES (?, 'upi', 'demo@upi', true, 'verified', 'Demo Partner')", pid);
         db.update("INSERT INTO notifications (partner_id, category, title, body) VALUES (?, 'account', 'Welcome to VpnExues', " +
                 "'Your partner account is ready. Complete a demo delivery to explore the app.')", pid);
-        log.info("Seeded demo partner 9876543210 / Demo@12345");
+        log.info("Seeded local demo partner with phone {}", "+919876543210");
     }
 }

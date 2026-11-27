@@ -13,9 +13,10 @@
     "start": "node dist/src/server.js",
     "migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",
     "migrate:prod": "node dist/scripts/migrate.js",
+    "db:inspect": "tsx --env-file-if-exists=.env scripts/inspect-db.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:test": "tsc -p test/tsconfig.json --noEmit",
-    "test": "node --experimental-transform-types --test test/sessionSecurity.test.ts test/authApiContract.test.ts",
+    "test": "node --experimental-transform-types --test test/sessionSecurity.test.ts test/authApiContract.test.ts test/databaseSafety.test.ts",
     "admin:create": "tsx --env-file-if-exists=.env scripts/create-admin.ts"
   },
   "dependencies": {

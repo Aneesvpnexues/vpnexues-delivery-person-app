@@ -1,7 +1,7 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_core/firebase_core.dart'; 
 
 
 import 'core/api_client.dart';
@@ -13,10 +13,8 @@ import 'ui/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
   // 2. Initialize Firebase
-  await Firebase.initializeApp(); 
-
+  await Firebase.initializeApp();
   final prefs = await SharedPreferences.getInstance();
   final api = ApiClient(prefs);
   final state = AppState(api);
@@ -40,6 +38,8 @@ class PartnerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // Rebuilds the whole app when AppState notifies (e.g. after the user
     // applies a new language and loadMe() refreshes the settings).
+    // The title is the canonical 'VP Nexues Partner' from both sides; the
+    // shorter 'VPNEXUES Partner' label remains available as legacyTitle.
     return ListenableBuilder(
       listenable: state,
       builder: (context, _) {

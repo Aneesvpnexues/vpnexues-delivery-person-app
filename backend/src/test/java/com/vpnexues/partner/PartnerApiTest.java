@@ -9,17 +9,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /** End-to-end smoke test: real PostgreSQL, real migrations, real HTTP. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
+                "spring.flyway.enabled=true",
+                "app.migration-target=local",
                 "app.demo-seed=true",
                 "app.trial-mode=true",
                 "app.otp-dev-echo=true",
@@ -27,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
                 "app.bootstrap-admin-password=Owner@12345"
         })
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@ActiveProfiles("local")
 class PartnerApiTest {
     static EmbeddedPostgres pg;
     static String partnerToken;
@@ -58,6 +63,12 @@ class PartnerApiTest {
     @Autowired
     TestRestTemplate rest;
 
+    @Autowired
+    org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @Autowired
+    com.vpnexues.partner.security.JwtService jwtService;
+
     @SuppressWarnings("rawtypes")
     private ResponseEntity<Map> get(String path, String token) {
         HttpHeaders h = new HttpHeaders();
@@ -79,6 +90,14 @@ class PartnerApiTest {
         if (token != null) h.setBearerAuth(token);
         if (idem != null) h.set("Idempotency-Key", idem);
         return rest.exchange(path, HttpMethod.POST, new HttpEntity<>(body, h), Map.class);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private ResponseEntity<Map> postRaw(String path, String json, String token) {
+        HttpHeaders h = new HttpHeaders();
+        h.setContentType(MediaType.APPLICATION_JSON);
+        if (token != null) h.setBearerAuth(token);
+        return rest.exchange(path, HttpMethod.POST, new HttpEntity<>(json, h), Map.class);
     }
 
     @SuppressWarnings("rawtypes")
@@ -261,5 +280,41 @@ class PartnerApiTest {
 
         ok(patch("/v1/admin/partners/" + partnerId, Map.of("deliveryRadiusKm", 7, "reason", "Smoke test"), adminToken), 200);
         ok(getList("/v1/admin/audit?entity=partner&entityId=" + partnerId, adminToken), 200);
+    }
+
+    @Test
+    @Order(11)
+    void partnerCannotAccessAnotherPartnersOrder() {
+        Integer cityId = jdbc.queryForObject("SELECT id FROM cities ORDER BY id LIMIT 1", Integer.class);
+        assertNotNull(cityId);
+        String otherId = UUID.randomUUID().toString();
+        jdbc.update("INSERT INTO partners (id, partner_code, full_name, phone, city_id, vehicle_type, " +
+                        "status, kyc_status, referral_code, password_hash) VALUES (?, ?, ?, ?, ?, 'motorbike', " +
+                        "'active', 'verified', ?, 'unused')",
+                otherId, "TST-" + UUID.randomUUID(), "Other Partner", "+919" + UUID.randomUUID().toString().replace("-", "").substring(0, 9),
+                cityId, "REF-" + UUID.randomUUID());
+        String otherToken = jwtService.issueAccess(otherId);
+
+        ResponseEntity<Map> detail = get("/v1/orders/" + orderId, otherToken);
+        ok(detail, 404);
+        assertEquals("NOT_FOUND", ((Map<?, ?>) detail.getBody().get("error")).get("code"));
+        ok(post("/v1/orders/" + orderId + "/accept", Map.of(), otherToken, null), 404);
+    }
+
+    @Test
+    @Order(12)
+    void invalidRequestsReturnStableSafeErrors() {
+        ResponseEntity<Map> tab = get("/v1/orders?tab=bogus", partnerToken);
+        ok(tab, 400);
+        assertEquals("INVALID_TAB", ((Map<?, ?>) tab.getBody().get("error")).get("code"));
+
+        ResponseEntity<Map> limit = get("/v1/orders?limit=0", partnerToken);
+        ok(limit, 400);
+        assertEquals("INVALID_LIMIT", ((Map<?, ?>) limit.getBody().get("error")).get("code"));
+
+        ResponseEntity<Map> malformed = postRaw("/v1/admin/orders", "{not json", adminToken);
+        ok(malformed, 400);
+        assertEquals("INVALID_BODY", ((Map<?, ?>) malformed.getBody().get("error")).get("code"));
+        assertFalse(String.valueOf(malformed.getBody()).contains("Exception"));
     }
 }

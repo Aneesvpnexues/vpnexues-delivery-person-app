@@ -35,7 +35,7 @@ public class OrderController {
     }
 
     @PostMapping("/{id}/at-pickup")
-    public Map<String, Object> atPickup(@PathVariable String id, @RequestBody(required = false) Dtos.LocBody body) {
+    public Map<String, Object> atPickup(@PathVariable String id, @Valid @RequestBody(required = false) Dtos.LocBody body) {
         return service.atPickup(id, body == null ? new Dtos.LocBody(null, null) : body);
     }
 
@@ -45,12 +45,12 @@ public class OrderController {
     }
 
     @PostMapping("/{id}/pickup")
-    public Map<String, Object> pickup(@PathVariable String id, @RequestBody(required = false) Dtos.LocBody body) {
+    public Map<String, Object> pickup(@PathVariable String id, @Valid @RequestBody(required = false) Dtos.LocBody body) {
         return service.pickup(id, body == null ? new Dtos.LocBody(null, null) : body);
     }
 
     @PostMapping("/{id}/arrive")
-    public Map<String, Object> arrive(@PathVariable String id, @RequestBody(required = false) Dtos.LocBody body) {
+    public Map<String, Object> arrive(@PathVariable String id, @Valid @RequestBody(required = false) Dtos.LocBody body) {
         return service.arrive(id, body == null ? new Dtos.LocBody(null, null) : body);
     }
 
