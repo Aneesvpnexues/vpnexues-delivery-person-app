@@ -6,32 +6,28 @@ import 'money_tab.dart';
 import 'orders_tab.dart';
 import 'profile_tab.dart';
 
-class HomeShell extends StatefulWidget {
+class HomeShell extends StatelessWidget {
   const HomeShell({super.key, required this.state});
 
   final AppState state;
 
   @override
-  State<HomeShell> createState() => _HomeShellState();
-}
-
-class _HomeShellState extends State<HomeShell> {
-  int _index = 0;
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: [
-          HomeTab(state: widget.state, onOpenTab: _open),
-          OrdersTab(state: widget.state, onOpenTab: _open),
-          MoneyTab(state: widget.state, onOpenTab: _open),
-          ProfileTab(state: widget.state, onOpenTab: _open),
-        ],
-      ),
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        return Scaffold(
+          body: IndexedStack(
+            index: state.homeTabIndex,
+            children: [
+              HomeTab(state: state, onOpenTab: state.setHomeTabIndex),
+              OrdersTab(state: state, onOpenTab: state.setHomeTabIndex),
+              MoneyTab(state: state, onOpenTab: state.setHomeTabIndex),
+              ProfileTab(state: state, onOpenTab: state.setHomeTabIndex),
+            ],
+          ),
+        );
+      },
     );
   }
-
-  void _open(int i) => setState(() => _index = i);
 }

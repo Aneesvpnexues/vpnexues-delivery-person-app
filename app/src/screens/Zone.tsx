@@ -33,6 +33,7 @@ export function Zone() {
   return (
     <Screen>
       <img src={mapZone} alt="Zone map" style={topBleed(322)} />
+      {/* goBack keeps shizan's nav(-1) behavior and adds a fallback route on fresh launches. */}
       <RoundBtn icon={ArrowLeft} x={20} y={48} onClick={goBack} />
       <RoundBtn icon={LocateFixed} x={344} y={48} onClick={() => void z.reload().then(() => toast('Zone refreshed'))} />
       <Pill x={20} y={279} w={155} label={`${km} km service radius`} color="#fff" dot="#b6dc45" />

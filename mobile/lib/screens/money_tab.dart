@@ -19,7 +19,6 @@ class MoneyTab extends StatefulWidget {
 
 class _MoneyTabState extends State<MoneyTab> {
   String _range = 'today';
-  final Map<String, dynamic>? _summary = null;
   bool _loading = true;
   bool _withdraw = false;
 
@@ -30,12 +29,82 @@ class _MoneyTabState extends State<MoneyTab> {
   @override
   void initState() {
     super.initState();
+    widget.state.addListener(_onAppStateChanged);
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant MoneyTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state != widget.state) {
+      oldWidget.state.removeListener(_onAppStateChanged);
+      widget.state.addListener(_onAppStateChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.state.removeListener(_onAppStateChanged);
+    super.dispose();
+  }
+
+  void _onAppStateChanged() {
+    if (mounted) setState(() {});
+  }
+
   Future<void> _load() async {
-    // Temporary dev mode: no server calls from splash to home screen.
-    setState(() => _loading = false);
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Map<String, dynamic>? get _summary {
+    // The local demo flow does not create backend transactions. Build the
+    // selected period directly from the same completed orders shown in Orders.
+    if (widget.state.demoOrders.isEmpty) return null;
+
+    final range = _range;
+    final orders = widget.state.demoDeliveredOrdersFor(range);
+    final base = widget.state.demoBasePayFor(range);
+    final distance = widget.state.demoDistancePayFor(range);
+    final extras = widget.state.demoExtrasFor(range);
+    final total = base + distance + extras;
+    // This chart is intentionally a Today-by-hour chart. Keep it tied to
+    // today's delivered orders even when the earnings period selector changes.
+    final hourly = <int, int>{};
+    final todayOrders = widget.state.demoDeliveredOrdersFor('today');
+    for (final order in todayOrders) {
+      DateTime? deliveredAt;
+      final raw = order['deliveredAt'] ?? order['completedAt'] ?? order['updatedAt'];
+      if (raw is DateTime) {
+        deliveredAt = raw;
+      } else {
+        deliveredAt = DateTime.tryParse(asString(raw));
+      }
+      if (deliveredAt == null) {
+        final timeline = mapList(order['timeline']);
+        for (final event in timeline.reversed) {
+          if (asString(event['status']).toLowerCase() == 'delivered') {
+            final at = event['at'];
+            deliveredAt = at is DateTime ? at : DateTime.tryParse(asString(at));
+            break;
+          }
+        }
+      }
+      if (deliveredAt != null) {
+        final hour = deliveredAt.hour;
+        hourly[hour] = (hourly[hour] ?? 0) + widget.state.demoOrderEarning(order);
+      }
+    }
+
+    return {
+      'basePaise': base,
+      'distancePaise': distance,
+      'extrasPaise': extras,
+      'netPaise': total,
+      'deliveries': orders.length,
+      'availableBalancePaise': widget.state.demoAvailableEarnings,
+      'byHour': hourly.entries.map((entry) => {'hour': entry.key, 'paise': entry.value}).toList(),
+      'nextWeeklyPayoutAt': null,
+    };
   }
 
   String get _tag {

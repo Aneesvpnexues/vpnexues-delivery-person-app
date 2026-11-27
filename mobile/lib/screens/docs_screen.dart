@@ -18,6 +18,7 @@ class DocsScreen extends StatefulWidget {
     if (d == null) return ('Not added', pillBad.bg, pillBad.fg);
 
     final status = asString(d['status']);
+    if (status == 'uploaded') return ('Uploaded', pillInfo.bg, pillInfo.fg);
 
     if (status == 'verified') {
       return asBool(d['expiringSoon'])
@@ -42,6 +43,10 @@ class DocsScreen extends StatefulWidget {
 
   static String subFor(Map<String, dynamic>? d) {
     if (d == null) return 'Tap to upload';
+
+    // Frontend-only selections carry the picked file name instead of a
+    // backend submission timestamp.
+    if (asString(d['fileName']).isNotEmpty) return asString(d['fileName']);
 
     if (asString(d['rejectionReason']).isNotEmpty) {
       return asString(d['rejectionReason']);
@@ -92,10 +97,29 @@ class _DocsScreenState extends State<DocsScreen> {
   @override
   void initState() {
     super.initState();
+    widget.state.addListener(_onDocumentsChanged);
     _load();
   }
 
+  @override
+  void dispose() {
+    widget.state.removeListener(_onDocumentsChanged);
+    super.dispose();
+  }
+
+  void _onDocumentsChanged() {
+    if (mounted) setState(() {});
+  }
+
   Future<void> _load() async {
+    // Offline dev sessions keep their selections in AppState.localDocuments;
+    // there is no backend to fetch documents from.
+    if (widget.state.api.isLocalSession) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      return;
+    }
+
     try {
       final res = await widget.state.api.get('/v1/documents');
       if (!mounted) return;
@@ -108,10 +132,12 @@ class _DocsScreenState extends State<DocsScreen> {
       if (!mounted) return;
 
       setState(() => _loading = false);
-      showToast(
-        context,
-        e is ApiException ? e.message : 'Could not load documents',
-      );
+      if (widget.state.localDocuments.isEmpty) {
+        showToast(
+          context,
+          e is ApiException ? e.message : 'Could not load documents',
+        );
+      }
     }
   }
 
@@ -119,18 +145,22 @@ class _DocsScreenState extends State<DocsScreen> {
     String type,
     Map<String, dynamic>? existing,
   ) async {
+    final saved = widget.state.getLocalDocument(type) ?? existing;
     final ok = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => DocumentUploadScreen(
           state: widget.state,
           type: type,
-          existing: existing,
+          existing: saved,
         ),
       ),
     );
 
     if (ok == true && mounted) {
-      showToast(context, '${docLabel(type)} submitted for review');
+      showToast(
+        context,
+        '${docLabel(type)} saved on this device session and submitted for review',
+      );
       await _load();
       await widget.state.loadMe();
     }
@@ -139,11 +169,17 @@ class _DocsScreenState extends State<DocsScreen> {
   @override
   Widget build(BuildContext context) {
     final docs = mapList(_data?['documents']);
-    final byType = {
+    final byType = <String, Map<String, dynamic>>{
       for (final d in docs) asString(d['type']): d,
     };
 
-    final attention = docs
+    // Frontend-only selections overlay the backend response so the cards
+    // immediately reflect what was picked in this session (also offline).
+    for (final entry in widget.state.localDocuments.entries) {
+      byType[entry.key] = entry.value;
+    }
+
+    final attention = byType.values
         .where(
           (d) =>
               asBool(d['expiringSoon']) ||
@@ -151,9 +187,24 @@ class _DocsScreenState extends State<DocsScreen> {
         )
         .toList();
 
-    final missing = stringList(_data?['missing'])
-        .where((t) => t != 'selfie')
+    final apiMissing = stringList(_data?['missing'])
+        .where(
+          (t) =>
+              t != 'selfie' &&
+              !widget.state.localDocuments.containsKey(
+                AppState.documentTypeKey(t),
+              ),
+        )
         .toList();
+    final sessionMissing = _grid
+        .map((item) => item.$1)
+        .where((type) => !byType.containsKey(type))
+        .toList();
+    final missing = <String>[
+      ...apiMissing,
+      for (final type in sessionMissing)
+        if (!apiMissing.contains(type)) type,
+    ];
 
     final nextType = missing.isNotEmpty ? missing.first : 'aadhaar';
 

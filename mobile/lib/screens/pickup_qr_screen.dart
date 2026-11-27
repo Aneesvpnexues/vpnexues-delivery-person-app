@@ -8,10 +8,18 @@ import '../ui/design.dart';
 import 'trip_screen.dart';
 
 class PickupQrScreen extends StatefulWidget {
-  const PickupQrScreen({super.key, required this.state, required this.orderId});
+  const PickupQrScreen({
+    super.key,
+    required this.state,
+    required this.orderId,
+    this.demoOrder,
+  });
 
   final AppState state;
   final String orderId;
+  final Map<String, dynamic>? demoOrder;
+
+  bool get isDemo => demoOrder != null;
 
   @override
   State<PickupQrScreen> createState() => _PickupQrScreenState();
@@ -30,7 +38,38 @@ class _PickupQrScreenState extends State<PickupQrScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    if (widget.demoOrder != null) {
+      _order = _makeDemoPickupOrder(widget.demoOrder!);
+      _loading = false;
+    } else {
+      _load();
+    }
+  }
+
+  Map<String, dynamic> _makeDemoPickupOrder(Map<String, dynamic> source) {
+    final local = Map<String, dynamic>.from(source);
+    local['crates'] = [
+      {
+        'position': 1,
+        'label': 'Vegetables',
+        'weightGrams': 4000,
+        'scanned': false,
+        'trialQr': 'DEMO-VEG-001',
+      },
+      {
+        'position': 2,
+        'label': 'Fruits & greens',
+        'weightGrams': 2500,
+        'scanned': false,
+        'trialQr': 'DEMO-FRUITS-002',
+      },
+    ];
+    local['pickup'] = {
+      'name': 'Anna Nagar Hub',
+      'lat': 0,
+      'lng': 0,
+    };
+    return local;
   }
 
   @override
@@ -40,6 +79,15 @@ class _PickupQrScreenState extends State<PickupQrScreen> {
   }
 
   Future<void> _load() async {
+    if (widget.isDemo) {
+      if (!mounted) return;
+      setState(() {
+        _order = _makeDemoPickupOrder(widget.demoOrder!);
+        _loading = false;
+      });
+      return;
+    }
+
     try {
       final res = await widget.state.api.get('/v1/orders/${widget.orderId}');
       if (!mounted) return;
@@ -55,6 +103,36 @@ class _PickupQrScreenState extends State<PickupQrScreen> {
   }
 
   Future<void> _scan(String code) async {
+    if (widget.isDemo) {
+      final crates = mapList(_order?['crates'])
+          .map((crate) => Map<String, dynamic>.from(crate))
+          .toList();
+      final nextIndex = crates.indexWhere((crate) => !asBool(crate['scanned']));
+      if (nextIndex < 0) {
+        showToast(context, 'All crates are verified.');
+        return;
+      }
+
+      final expectedCode = asString(crates[nextIndex]['trialQr']);
+      if (code.trim().toUpperCase() != expectedCode.toUpperCase()) {
+        showToast(context, 'That crate code does not match the demo crate.');
+        return;
+      }
+
+      crates[nextIndex]['scanned'] = true;
+      if (!mounted) return;
+      setState(() {
+        _order = {
+          ...?_order,
+          'crates': crates,
+        };
+        _manual = null;
+      });
+      _code.clear();
+      showToast(context, 'Crate ${nextIndex + 1} of ${crates.length} verified.');
+      return;
+    }
+
     setState(() => _busy = true);
     try {
       final res = await widget.state.api.post('/v1/orders/${widget.orderId}/crates/scan', body: {'qrCode': code.trim()});
@@ -72,6 +150,26 @@ class _PickupQrScreenState extends State<PickupQrScreen> {
   }
 
   void _tapScan() {
+    if (widget.isDemo) {
+      final crates = mapList(_order?['crates'])
+          .map((crate) => Map<String, dynamic>.from(crate))
+          .toList();
+      final nextIndex = crates.indexWhere((crate) => !asBool(crate['scanned']));
+      if (nextIndex < 0) {
+        showToast(context, 'All crates are scanned');
+        return;
+      }
+      crates[nextIndex]['scanned'] = true;
+      setState(() {
+        _order = {
+          ...?_order,
+          'crates': crates,
+        };
+      });
+      showToast(context, 'Crate ${nextIndex + 1} of ${crates.length} verified.');
+      return;
+    }
+
     final crates = mapList(_order?['crates']);
     final next = crates.where((c) => !asBool(c['scanned'])).toList();
     if (next.isEmpty) {
@@ -87,6 +185,32 @@ class _PickupQrScreenState extends State<PickupQrScreen> {
   }
 
   Future<void> _confirm() async {
+    if (widget.isDemo) {
+      final demoTripOrder = Map<String, dynamic>.from(_order!);
+      demoTripOrder['status'] = 'picked_up';
+      final timeline = mapList(demoTripOrder['timeline'])
+          .map((event) => Map<String, dynamic>.from(event))
+          .toList();
+      timeline.add({
+        'status': 'picked_up',
+        'at': DateTime.now().toIso8601String(),
+      });
+      demoTripOrder['timeline'] = timeline;
+
+      if (!mounted) return;
+      showToast(context, 'Demo pickup confirmed. Trip started.');
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => TripScreen(
+            state: widget.state,
+            orderId: widget.orderId,
+            demoOrder: demoTripOrder,
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _busy = true);
     try {
       await widget.state.api.post('/v1/orders/${widget.orderId}/pickup', body: const <String, dynamic>{});
@@ -115,14 +239,15 @@ class _PickupQrScreenState extends State<PickupQrScreen> {
     final trial = crates.any((c) => asString(c['trialQr']).isNotEmpty);
 
     return DesignCanvas(
-      background: const Color(0xFF142A1F),
+      // Keep the lower page area warm off-white, like the reference design.
+      background: const Color(0xFFF7F8F1),
       child: Stack(
         children: [
           Positioned(
             left: 0,
             top: 0,
             width: 412,
-            height: 480,
+            height: 470,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
@@ -297,7 +422,7 @@ class _PickupQrScreenState extends State<PickupQrScreen> {
           DTxt(
             'Enter crate code manually',
             x: 20,
-            y: 862,
+            y: 850,
             w: 372,
             s: 14,
             wt: FontWeight.w600,

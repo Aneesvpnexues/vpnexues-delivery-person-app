@@ -1174,14 +1174,16 @@ class _StickyPrimaryButton extends StatelessWidget {
           child: Ink(
             height: 56,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-  colors: [
-    Color(0xFF064E32), // Dark green
-    Color(0xFF0B6B43), // Slightly lighter green
-  ],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-),
+              // HEAD's dark-green styling kept; Shizan's kGrad direction hook
+              // is reused so theme-level gradient direction stays shared.
+              gradient: LinearGradient(
+                colors: const [
+                  Color(0xFF064E32), // Dark green
+                  Color(0xFF0B6B43), // Slightly lighter green
+                ],
+                begin: kGrad.begin,
+                end: kGrad.end,
+              ),
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(

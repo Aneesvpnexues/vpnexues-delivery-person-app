@@ -9,12 +9,23 @@ import '../ui/design.dart';
 import 'handover_screen.dart';
 import 'pickup_qr_screen.dart';
 import 'trip_screen.dart';
+import 'home_shell.dart';
 
 class OrderDetailScreen extends StatefulWidget {
-  const OrderDetailScreen({super.key, required this.state, required this.orderId});
+  const OrderDetailScreen({
+    super.key,
+    required this.state,
+    required this.orderId,
+    this.demoOrder,
+  });
 
   final AppState state;
   final String orderId;
+
+  /// When supplied, the screen uses this local order and makes no order API calls.
+  final Map<String, dynamic>? demoOrder;
+
+  bool get isDemo => demoOrder != null;
 
   @override
   State<OrderDetailScreen> createState() => _OrderDetailScreenState();
@@ -37,10 +48,26 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+
+    if (widget.demoOrder != null) {
+      _order = Map<String, dynamic>.from(widget.demoOrder!);
+      _loading = false;
+    } else {
+      _load();
+    }
   }
 
   Future<void> _load() async {
+    if (widget.demoOrder != null) {
+      if (!mounted) return;
+      setState(() {
+        _order = Map<String, dynamic>.from(widget.demoOrder!);
+        _loading = false;
+        _error = null;
+      });
+      return;
+    }
+
     try {
       final res = await widget.state.api.get('/v1/orders/${widget.orderId}');
       if (!mounted) return;
@@ -71,6 +98,41 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Future<void> _primary(Map<String, dynamic> o) async {
     final status = asString(o['status']);
+
+    if (widget.isDemo) {
+      if (status == 'assigned') {
+        final updatedOrder = Map<String, dynamic>.from(o);
+        final updatedTimeline = List<Map<String, dynamic>>.from(
+          mapList(o['timeline']).map((event) => Map<String, dynamic>.from(event)),
+        );
+
+        updatedTimeline.add({
+          'status': 'accepted',
+          'at': DateTime.now().toIso8601String(),
+        });
+
+        updatedOrder['status'] = 'accepted';
+        updatedOrder['timeline'] = updatedTimeline;
+
+        if (!mounted) return;
+        setState(() {
+          _order = updatedOrder;
+        });
+        showToast(context, 'Demo order accepted.');
+      } else if (status == 'accepted' || status == 'at_pickup') {
+        await _open(
+          PickupQrScreen(
+            state: widget.state,
+            orderId: widget.orderId,
+            demoOrder: o,
+          ),
+        );
+      } else {
+        showToast(context, 'This action is not available for demo orders.');
+      }
+      return;
+    }
+
     if (status == 'assigned') {
       setState(() => _busy = true);
       try {
@@ -79,7 +141,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         showToast(context, 'Order accepted. Head to the hub.');
         await _load();
       } catch (e) {
-        if (mounted) showToast(context, e is ApiException ? e.message : 'Could not accept the order');
+        if (mounted) {
+          showToast(
+            context,
+            e is ApiException ? e.message : 'Could not accept the order',
+          );
+        }
       } finally {
         if (mounted) setState(() => _busy = false);
       }
@@ -95,9 +162,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _navigate(Map<String, dynamic> o, bool toPickup) async {
-    final lat = toPickup ? asDouble((o['pickup'] is Map) ? (o['pickup'] as Map)['lat'] : null) : asDouble(o['dropLat']);
-    final lng = toPickup ? asDouble((o['pickup'] is Map) ? (o['pickup'] as Map)['lng'] : null) : asDouble(o['dropLng']);
-    final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=two-wheeler');
+    if (widget.isDemo) {
+      showToast(context, 'Navigation is unavailable for demo orders.');
+      return;
+    }
+
+    final lat = toPickup
+        ? asDouble((o['pickup'] is Map) ? (o['pickup'] as Map)['lat'] : null)
+        : asDouble(o['dropLat']);
+    final lng = toPickup
+        ? asDouble((o['pickup'] is Map) ? (o['pickup'] as Map)['lng'] : null)
+        : asDouble(o['dropLng']);
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=two-wheeler',
+    );
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {
@@ -105,11 +183,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  void _goHome() {
+    widget.state.setHomeTabIndex(0);
+
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute<void>(
+        builder: (_) => HomeShell(state: widget.state),
+      ),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final o = _order;
     if (_loading && o == null) {
-      return const DesignCanvas(child: Center(child: CircularProgressIndicator(color: C.green)));
+      return const DesignCanvas(
+        child: Center(child: CircularProgressIndicator(color: C.green)),
+      );
     }
     if (o == null) {
       return DesignCanvas(
@@ -117,7 +208,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           children: [
             const Backdrop(),
             BackBar(title: 'Order'),
-            DTxt(_error ?? 'Order unavailable', x: 20, y: 300, w: 372, s: 15, wt: FontWeight.w600, c: C.muted, align: TextAlign.center),
+            DTxt(
+              _error ?? 'Order unavailable',
+              x: 20,
+              y: 300,
+              w: 372,
+              s: 15,
+              wt: FontWeight.w600,
+              c: C.muted,
+              align: TextAlign.center,
+            ),
           ],
         ),
       );
@@ -126,7 +226,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final current = _stepIndex(status);
     final events = mapList(o['timeline']);
     final crates = mapList(o['crates']);
-    final earning = asInt(o['payBasePaise']) + asInt(o['payDistancePaise']) + asInt(o['tipPaise']);
+    final earning = asInt(o['payBasePaise']) +
+        asInt(o['payDistancePaise']) +
+        asInt(o['tipPaise']);
     final delivered = status == 'delivered' || status == 'cancelled';
     final label = switch (status) {
       'assigned' => _busy ? 'ACCEPTING…' : 'ACCEPT ORDER',
@@ -135,6 +237,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       'arrived' => 'HAND OVER ORDER',
       _ => 'BACK TO ORDERS',
     };
+
     String? at(String key) {
       for (final e in events) {
         if (asString(e['status']) == key) return asString(e['at']);
@@ -146,8 +249,36 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Stack(
         children: [
           DImg('assets/art/map-details.png', x: 0, y: 0, w: 412, h: 232),
-          RoundBtn(icon: LucideIcons.arrowLeft, y: 48, onTap: () => Navigator.of(context).maybePop()),
-          Pill(x: 257, y: 60, w: 135, label: statusLabel(status), bg: C.green, fg: const Color(0xFFD6EE75)),
+          Positioned(
+            left: 20,
+            top: 48,
+            width: 48,
+            height: 48,
+            child: Material(
+              color: Colors.white,
+              shape: const CircleBorder(),
+              elevation: 3,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: _goHome,
+                child: const Center(
+                  child: Icon(
+                    LucideIcons.arrowLeft,
+                    size: 20,
+                    color: C.green,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Pill(
+            x: 257,
+            y: 60,
+            w: 135,
+            label: statusLabel(status),
+            bg: C.green,
+            fg: const Color(0xFFD6EE75),
+          ),
           Pill(
             x: 20,
             y: 190,
@@ -170,17 +301,80 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ),
 
-          const DTxt('ORDER', x: 20, y: 248, s: 11, wt: FontWeight.w700, lh: 15.4, c: C.accent, ls: .3),
-          DTxt('#${asString(o['orderCode'])}', x: 20, y: 261, s: 28, wt: FontWeight.w700, lh: 38),
-          const DTxt('You earn', x: 292, y: 247, w: 100, s: 12, lh: 16.8, c: C.muted, align: TextAlign.right),
-          DTxt(money(earning), x: 292, y: 266, w: 100, s: 24, wt: FontWeight.w700, lh: 32, c: C.accent, align: TextAlign.right),
+          const DTxt(
+            'ORDER',
+            x: 20,
+            y: 248,
+            s: 11,
+            wt: FontWeight.w700,
+            lh: 15.4,
+            c: C.accent,
+            ls: .3,
+          ),
+          DTxt(
+            '#${asString(o['orderCode'])}',
+            x: 20,
+            y: 261,
+            s: 28,
+            wt: FontWeight.w700,
+            lh: 38,
+          ),
+          const DTxt(
+            'You earn',
+            x: 292,
+            y: 247,
+            w: 100,
+            s: 12,
+            lh: 16.8,
+            c: C.muted,
+            align: TextAlign.right,
+          ),
+          DTxt(
+            money(earning),
+            x: 292,
+            y: 266,
+            w: 100,
+            s: 24,
+            wt: FontWeight.w700,
+            lh: 32,
+            c: C.accent,
+            align: TextAlign.right,
+          ),
 
-          DBox(x: 20, y: 314, w: 372, h: 262, r: 24, bg: Colors.white, border: Border.all(color: C.line), shadow: sh(8, 20, .04)),
-          DBox(x: 46, y: 346, w: 2, h: (current > 0 ? current : 0) * 48, bg: C.accent),
-          DBox(x: 46, y: 346 + current * 48, w: 2, h: (4 - current) * 48 - 10, bg: const Color(0xFFE2EADC)),
+          DBox(
+            x: 20,
+            y: 314,
+            w: 372,
+            h: 262,
+            r: 24,
+            bg: Colors.white,
+            border: Border.all(color: C.line),
+            shadow: sh(8, 20, .04),
+          ),
+          DBox(
+            x: 46,
+            y: 346,
+            w: 2,
+            h: (current > 0 ? current : 0) * 48,
+            bg: C.accent,
+          ),
+          DBox(
+            x: 46,
+            y: 346 + current * 48,
+            w: 2,
+            h: (4 - current) * 48 - 10,
+            bg: const Color(0xFFE2EADC),
+          ),
           for (var i = 0; i < _steps.length; i++) ...[
             if (i == current && status != 'delivered') ...[
-              DBox(x: 36, y: 340 + i * 48 - 11, w: 22, h: 22, r: 11, bg: const Color(0xFFE3ECB5)),
+              DBox(
+                x: 36,
+                y: 340 + i * 48 - 11,
+                w: 22,
+                h: 22,
+                r: 11,
+                bg: const Color(0xFFE3ECB5),
+              ),
               DBox(
                 x: 40,
                 y: 340 + i * 48 - 7,
@@ -191,8 +385,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 border: Border.all(color: C.green, width: 4),
               ),
             ] else if (i < current || status == 'delivered') ...[
-              DBox(x: 40, y: 340 + i * 48 - 7, w: 14, h: 14, r: 7, bg: const Color(0xFFD9ECD9)),
-              DBox(x: 43, y: 340 + i * 48 - 4, w: 8, h: 8, r: 4, bg: C.accent),
+              DBox(
+                x: 40,
+                y: 340 + i * 48 - 7,
+                w: 14,
+                h: 14,
+                r: 7,
+                bg: const Color(0xFFD9ECD9),
+              ),
+              DBox(
+                x: 43,
+                y: 340 + i * 48 - 4,
+                w: 8,
+                h: 8,
+                r: 4,
+                bg: C.accent,
+              ),
             ] else
               DBox(
                 x: 41,
@@ -201,7 +409,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 h: 12,
                 r: 6,
                 bg: Colors.white,
-                border: Border.all(color: const Color(0xFFC9D6C9), width: 2),
+                border: Border.all(
+                  color: const Color(0xFFC9D6C9),
+                  width: 2,
+                ),
               ),
             DTxt(
               _steps[i].$2,
@@ -210,7 +421,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               s: 14,
               wt: FontWeight.w700,
               lh: 19.6,
-              c: (i < current || status == 'delivered' || i == current) ? C.ink : C.muted,
+              c: (i < current || status == 'delivered' || i == current)
+                  ? C.ink
+                  : C.muted,
             ),
             DTxt(
               at(_steps[i].$1) != null
@@ -224,7 +437,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ],
 
-          DBox(x: 20, y: 592, w: 372, h: 86, r: 24, bg: Colors.white, border: Border.all(color: C.line), shadow: sh(8, 20, .04)),
+          DBox(
+            x: 20,
+            y: 592,
+            w: 372,
+            h: 86,
+            r: 24,
+            bg: Colors.white,
+            border: Border.all(color: C.line),
+            shadow: sh(8, 20, .04),
+          ),
           DBox(
             x: 37,
             y: 611,
@@ -239,31 +461,85 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: Center(
               child: Text(
                 initials(asString(o['customerName'], 'Customer')),
-                style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
-          DTxt(asString(o['customerName'], 'Customer'), x: 97, y: 608, s: 15, wt: FontWeight.w700, lh: 21),
-          DTxt(asString(o['dropAddress']), x: 97, y: 628, w: 215, s: 12, lh: 18, c: C.muted, maxLines: 2),
+          DTxt(
+            asString(o['customerName'], 'Customer'),
+            x: 97,
+            y: 608,
+            s: 15,
+            wt: FontWeight.w700,
+            lh: 21,
+          ),
+          DTxt(
+            asString(o['dropAddress']),
+            x: 97,
+            y: 628,
+            w: 215,
+            s: 12,
+            lh: 18,
+            c: C.muted,
+            maxLines: 2,
+          ),
           RoundBtn(
             icon: LucideIcons.phone,
             x: 328,
             y: 611,
-            onTap: () => showToast(context, 'Calls connect through a masked number (${asString(o['customerPhoneMasked'])}). Coming soon.'),
+            onTap: () => showToast(
+              context,
+              'Calls connect through a masked number (${asString(o['customerPhoneMasked'])}). Coming soon.',
+            ),
           ),
 
-          DBox(x: 20, y: 694, w: 372, h: 67, r: 22, bg: const Color(0xFFFFF5D9), border: Border.all(color: const Color(0xFFF0DC8C))),
-          const Positioned(left: 36, top: 709, child: Icon(LucideIcons.messageCircle, size: 16, color: Color(0xFF795109))),
+          DBox(
+            x: 20,
+            y: 694,
+            w: 372,
+            h: 67,
+            r: 22,
+            bg: const Color(0xFFFFF5D9),
+            border: Border.all(color: const Color(0xFFF0DC8C)),
+          ),
+          const Positioned(
+            left: 36,
+            top: 709,
+            child: Icon(
+              LucideIcons.messageCircle,
+              size: 16,
+              color: Color(0xFF795109),
+            ),
+          ),
           Positioned(
             left: 65,
             top: 707,
             width: 315,
             child: Text.rich(
-              TextSpan(children: [
-                const TextSpan(text: 'Customer note: ', style: TextStyle(fontWeight: FontWeight.w700)),
-                TextSpan(text: asString(o['dropInstructions']).isEmpty ? 'No special instructions.' : asString(o['dropInstructions'])),
-              ]),
-              style: const TextStyle(fontFamily: 'Inter', fontSize: 13.5, color: Color(0xFF795109), height: 20 / 13.5),
+              TextSpan(
+                children: [
+                  const TextSpan(
+                    text: 'Customer note: ',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  TextSpan(
+                    text: asString(o['dropInstructions']).isEmpty
+                        ? 'No special instructions.'
+                        : asString(o['dropInstructions']),
+                  ),
+                ],
+              ),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13.5,
+                color: Color(0xFF795109),
+                height: 20 / 13.5,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -271,14 +547,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
           Btn(
             y: 782,
-            icon: (status == 'accepted' || status == 'at_pickup') ? LucideIcons.scanLine : null,
+            icon: (status == 'accepted' || status == 'at_pickup')
+                ? LucideIcons.scanLine
+                : null,
             label: label,
-            onTap: delivered ? () => Navigator.of(context).maybePop() : (_busy ? null : () => _primary(o)),
+            onTap: delivered
+                ? () => Navigator.of(context).maybePop()
+                : (_busy ? null : () => _primary(o)),
           ),
           DTxt(
             'Report a problem with this order',
             x: 20,
-            y: 862,
+            y: 842,
             w: 372,
             s: 14,
             wt: FontWeight.w600,

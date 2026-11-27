@@ -62,7 +62,7 @@ bool _sent = false;
   ];
 
   String _incident = 'road_accident';
-  List _contacts = [];
+  List<Map<String, dynamic>> _contacts = [];
   bool _loading = true;
   bool _add = false;
   final _name = TextEditingController();
@@ -113,6 +113,7 @@ void dispose() {
         _loading = false;
       });
     } catch (_) {
+      // Offline/local dev flow: keep any contacts already added locally.
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -322,41 +323,70 @@ Future<void> _sendHapticPattern() async {
   }
 }
 
+  // Shizan's add-contact entry point is kept for the fixed-canvas helper;
+  // the visible screen uses HEAD's themed Modal below.
+  Future<void> _openAddContact() async {
+    if (_saving || _contacts.length >= 2) return;
+    HapticFeedback.selectionClick();
+    if (mounted) setState(() => _add = true);
+  }
+
   Future<void> _saveContact() async {
     FocusScope.of(context).unfocus();
-    if (_name.text.trim().isEmpty ||
-        _phone.text.replaceAll(RegExp(r'\D'), '').length < 10) {
+    final name = _name.text.trim();
+    final phone = _phone.text.trim();
+    if (name.isEmpty || phone.replaceAll(RegExp(r'\D'), '').length < 10) {
       showToast(context, 'Enter a name and a valid phone number');
       return;
     }
     setState(() => _saving = true);
+
+    var savedToServer = false;
     try {
       await widget.state.api.post('/v1/emergency-contacts', body: {
-        'name': _name.text.trim(),
+        'name': name,
         'relationship': _relationship,
-        'phone': _phone.text.trim(),
+        'phone': phone,
       });
+      savedToServer = true;
+    } catch (_) {
+      // Offline/local dev flow: keep the contact in app state only.
+    }
+    if (!mounted) return;
+
+    if (savedToServer) {
+      await _loadContacts();
       if (!mounted) return;
-      showToast(context, 'Emergency contact saved');
+    } else {
+      setState(() {
+        _contacts = [
+          ..._contacts,
+          {
+            'id': 'local-emergency-contact-${DateTime.now().microsecondsSinceEpoch}',
+            'name': name,
+            'relationship': _relationship,
+            'phone': phone,
+            'isPrimary': false,
+          },
+        ];
+      });
+    }
+    showToast(context, 'Emergency contact added');
+    if (mounted) {
       setState(() {
         _add = false;
         _name.clear();
         _phone.clear();
+        _saving = false;
       });
-      await _loadContacts();
-    } catch (e) {
-      if (mounted) {
-        showToast(
-          context,
-          e is ApiException ? e.message : 'Could not save the contact',
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
     }
   }
 
   Future<void> _removeContact(Map<String, dynamic> c) async {
+    // Local/offline path: remove immediately from the in-memory list.
+    if (mounted) {
+      setState(() => _contacts.removeWhere((item) => item['id'] == c['id']));
+    }
     try {
       await widget.state.api
           .delete('/v1/emergency-contacts/${asString(c['id'])}');
@@ -365,10 +395,12 @@ Future<void> _sendHapticPattern() async {
       if (mounted) {
         showToast(
           context,
-          e is ApiException ? e.message : 'Could not remove the contact',
+          e is ApiException ? e.message : 'Emergency contact removed',
         );
       }
+      return;
     }
+    if (mounted) showToast(context, 'Emergency contact removed');
   }
 
   Future<void> _dial(String phone) async {
@@ -1405,21 +1437,37 @@ AnimatedBuilder(
                           ),
                         ),
                       ),
-                      if (_contacts.length < 3 && !_loading)
-                        TextButton(
-                          onPressed: () => setState(() => _add = true),
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(48, 32),
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            foregroundColor: C.green,
-                          ),
-                          child: const Text(
-                            '+ Add',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                      if (_contacts.length < 2)
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _openAddContact(),
+                            borderRadius: BorderRadius.circular(10),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    LucideIcons.plus,
+                                    size: 15,
+                                    color: C.green,
+                                  ),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'Add',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: C.green,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -1427,69 +1475,27 @@ AnimatedBuilder(
                   ),
                   const SizedBox(height: 6),
                   Expanded(
-                    child: _loading
-                        ? const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'Loading…',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                color: C.muted,
+                    child: contacts.isEmpty
+                        ? const SizedBox.expand(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Padding(
+                                padding: EdgeInsets.only(right: 12),
+                                child: Text(
+                                  'Add someone we should call if you’re in an accident.',
+                                  maxLines: 2,
+                                  textAlign: TextAlign.left,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 12,
+                                    height: 1.35,
+                                    color: C.muted,
+                                  ),
+                                ),
                               ),
                             ),
                           )
-                        : contacts.isEmpty
-                            ? Row(
-                                children: [
-                                  const Expanded(
-                                    child: Text(
-                                      'Add someone we should call if you’re in an accident.',
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 12,
-                                        height: 1.35,
-                                        color: C.muted,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    height: 40,
-                                    child: OutlinedButton.icon(
-                                      onPressed: () =>
-                                          setState(() => _add = true),
-                                      icon: const Icon(
-                                        LucideIcons.plus,
-                                        size: 15,
-                                      ),
-                                      label: const Text(
-                                        'ADD CONTACT',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: C.green,
-                                        side: const BorderSide(
-                                          color: C.green,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
                             : Column(
                                 children: [
                                   for (var i = 0; i < contacts.length; i++) ...[
@@ -1499,12 +1505,13 @@ AnimatedBuilder(
                                         thickness: 1,
                                         color: C.tint5,
                                       ),
-                                    Expanded(
+                                    SizedBox(
+                                      height: 43,
                                       child: Row(
-                                              children: [
+                                        children: [
                                                 Container(
-                                                  width: 36,
-                                                  height: 36,
+                                                  width: 32,
+                                                  height: 32,
                                                   alignment: Alignment.center,
                                                   decoration: BoxDecoration(
                                                     color: i.isOdd
@@ -1613,56 +1620,7 @@ AnimatedBuilder(
             ),
           ),
 
-          if (_add)
-            Modal(
-              onClose: () => setState(() => _add = false),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Emergency contact',
-                      style: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w700, color: C.ink)),
-                  const SizedBox(height: 12),
-                  Field(w: 324, h: 48, label: 'Name', controller: _name, placeholder: 'Full name'),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final r in _relationships)
-                        GestureDetector(
-                          onTap: () => setState(() => _relationship = r),
-                          child: IntrinsicWidth(
-                            child: Container(
-                              height: 36,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: _relationship == r ? C.green : Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                border: _relationship == r ? null : Border.all(color: C.line),
-                              ),
-                              child: Text(
-                                r[0].toUpperCase() + r.substring(1),
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: _relationship == r ? Colors.white : C.ink,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Field(w: 324, h: 48, label: 'Mobile number', controller: _phone, keyboard: TextInputType.phone, placeholder: '10-digit number'),
-                  const SizedBox(height: 16),
-                  Btn(w: 324, h: 48, label: _saving ? 'SAVING…' : 'SAVE CONTACT', onTap: _saving ? null : _saveContact),
-                ],
-              ),
-            ),
+
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:country_code_picker/country_code_picker.dart';
 
 import '../core/api_client.dart';
 import '../state/app_state.dart';
@@ -31,6 +32,24 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordKey = GlobalKey();
 
   final _scrollController = ScrollController();
+
+  // Shizan's international-phone state, wired into HEAD's prefix widget.
+  String _selectedCountryCode = '+91';
+  String _selectedCountryIso = 'IN';
+
+  /// HEAD keeps the 10-digit default; other calling codes use Shizan's E.164
+  /// headroom calculation so the active field still respects 15 digits total.
+  int get _maxNationalDigits => _selectedCountryCode == '+91'
+      ? 10
+      : (15 - _selectedCountryCode.replaceAll(RegExp(r'\D'), '').length)
+          .clamp(1, 15)
+          .toInt();
+
+  int get _minNationalDigits => _selectedCountryCode == '+91'
+      ? 10
+      : (8 - _selectedCountryCode.replaceAll(RegExp(r'\D'), '').length)
+          .clamp(1, 15)
+          .toInt();
 
   String _tab = 'password';
   bool _show = false;
@@ -81,10 +100,25 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _submittedOnce = true);
     }
 
-    final phone = _mobile.text.replaceAll(RegExp(r'\D'), '');
-    if (phone.length < 10) {
+    final nationalNumber = _mobile.text.replaceAll(RegExp(r'\D'), '');
+    // Shizan's full international number is passed to the dev login/OTP flows.
+    final phone = '$_selectedCountryCode$nationalNumber';
+    final internationalDigits = phone.replaceAll(RegExp(r'\D'), '');
+
+    // Keep HEAD's 10-digit rule (and its string) for the default India prefix;
+    // use Shizan's E.164 bounds for every other calling code.
+    final invalidIndia = _selectedCountryCode == '+91' &&
+        nationalNumber.length < _minNationalDigits;
+    final invalidInternational = _selectedCountryCode != '+91' &&
+        (internationalDigits.length < 8 || internationalDigits.length > 15);
+    if (invalidIndia || invalidInternational) {
       HapticFeedback.lightImpact();
-      showToast(context, 'Enter your 10-digit mobile number');
+      showToast(
+        context,
+        _selectedCountryCode == '+91'
+            ? 'Enter your 10-digit mobile number'
+            : 'Enter a valid international mobile number',
+      );
       return;
     }
     if (_tab == 'password' && _password.text.isEmpty) {
@@ -510,7 +544,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildMobileField() {
     final digits = _mobile.text.replaceAll(RegExp(r'\D'), '');
-    final hasError = _submittedOnce && digits.length < 10;
+    final hasError = _submittedOnce && digits.length < _minNationalDigits;
 
     return Column(
       key: _mobileKey,
@@ -533,15 +567,7 @@ class _LoginScreenState extends State<LoginScreen> {
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                '+91',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: C.ink,
-                ),
-              ),
+              _buildCountryCodeTrigger(),
               const SizedBox(width: 10),
               Container(
                 width: 1,
@@ -560,7 +586,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 _tab == 'password' ? TextInputAction.next : TextInputAction.done,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
+              LengthLimitingTextInputFormatter(_maxNationalDigits),
             ],
             onSubmitted: (_) {
               if (_tab == 'password') {
@@ -581,26 +607,125 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 1.25,
               color: C.ink,
             ),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               isDense: true,
               filled: false,
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
-              hintText: '10-digit number',
-              hintStyle: TextStyle(
+              // HEAD's string stays on the default prefix; Shizan's generic
+              // hint is used once a different calling code is selected.
+              hintText: _selectedCountryCode == '+91'
+                  ? '10-digit number'
+                  : 'Mobile number',
+              hintStyle: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 height: 1.25,
                 color: Color(0xFF9AA69E),
               ),
-              contentPadding: EdgeInsets.symmetric(vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
             ),
           ),
         ),
       ],
     );
+  }
+
+  /// HEAD's visible '+91' prefix is preserved; Shizan's CountryCodePicker is
+  /// layered invisibly on top so its callback/state updates still work.
+  Widget _buildCountryCodeTrigger() {
+    return Stack(
+      alignment: Alignment.centerLeft,
+      children: [
+        Text(
+          _selectedCountryCode,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: C.ink,
+          ),
+        ),
+        Positioned.fill(
+          child: CountryCodePicker(
+            initialSelection: _selectedCountryIso,
+            favorite: const ['+91', '+94', '+1', '+44'],
+            showCountryOnly: false,
+            showOnlyCountryWhenClosed: false,
+            showFlag: false,
+            showDropDownButton: false,
+            alignLeft: true,
+            padding: EdgeInsets.zero,
+            dialogSize: Size(
+              MediaQuery.sizeOf(context).width * 0.9,
+              MediaQuery.sizeOf(context).height * 0.72,
+            ),
+            searchDecoration: InputDecoration(
+              hintText: 'Search country or calling code',
+              hintStyle: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF8A978F),
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                size: 20,
+                color: Color(0xFF718078),
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 46,
+                minHeight: 48,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
+              filled: true,
+              fillColor: const Color(0xFFF7F9F5),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Color(0xFFDCE4D9)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(
+                  color: Color(0xFF247947),
+                  width: 1.4,
+                ),
+              ),
+            ),
+            onChanged: _handleCountryChanged,
+            builder: (_) => const SizedBox.expand(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Shizan's country-selection behaviour: update code/ISO, trim the typed
+  /// national number to the E.164-safe limit, and clear HEAD's submitted state.
+  void _handleCountryChanged(CountryCode country) {
+    final newCode = country.dialCode ?? '+91';
+    final newIso = country.code ?? 'IN';
+
+    setState(() {
+      _selectedCountryCode = newCode;
+      _selectedCountryIso = newIso;
+
+      final currentDigits = _mobile.text.replaceAll(RegExp(r'\D'), '');
+      final maxDigits = _maxNationalDigits;
+      if (currentDigits.length > maxDigits) {
+        _mobile.text = currentDigits.substring(0, maxDigits);
+        _mobile.selection = TextSelection.collapsed(
+          offset: _mobile.text.length,
+        );
+      }
+      if (_submittedOnce) _submittedOnce = false;
+    });
+    HapticFeedback.selectionClick();
   }
 
   Widget _buildPasswordField() {
@@ -1524,14 +1649,16 @@ class _LoginPrimaryButton extends StatelessWidget {
           child: Ink(
             height: 56,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-  colors: [
-    Color(0xFF064E32), // Dark green
-    Color(0xFF0B6B43), // Slightly lighter green
-  ],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-),
+              // HEAD's dark-green styling kept; Shizan's kGrad direction hook
+              // is reused so theme-level gradient direction stays shared.
+              gradient: LinearGradient(
+                colors: const [
+                  Color(0xFF064E32), // Dark green
+                  Color(0xFF0B6B43), // Slightly lighter green
+                ],
+                begin: kGrad.begin,
+                end: kGrad.end,
+              ),
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(

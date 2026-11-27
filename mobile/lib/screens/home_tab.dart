@@ -12,6 +12,7 @@ import 'notifications_screen.dart';
 import 'order_detail_screen.dart';
 import 'sos_screen.dart';
 import 'zone_screen.dart';
+import 'bank_payout_screen.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key, required this.state, required this.onOpenTab});
@@ -24,15 +25,34 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
-  final Map<String, dynamic>? _earnings = null;
-  final List _orders = [];
+  final List<Map<String, dynamic>> _orders = [];
   bool _loading = true;
   bool _creating = false;
 
   @override
   void initState() {
     super.initState();
+    widget.state.addListener(_onAppStateChanged);
     _load();
+  }
+
+  void _onAppStateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state != widget.state) {
+      oldWidget.state.removeListener(_onAppStateChanged);
+      widget.state.addListener(_onAppStateChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.state.removeListener(_onAppStateChanged);
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -41,7 +61,25 @@ class _HomeTabState extends State<HomeTab> {
     setState(() => _loading = false);
   }
 
+  Future<void> _openBankPayout() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BankPayoutScreen(
+          state: widget.state,
+          availableBalancePaise: widget.state.demoAvailableEarnings,
+        ),
+      ),
+    );
+  }
+
   Future<void> _toggleOnline(bool value) async {
+    // Going online is not available yet. Keep the partner offline and
+    // show an informational message instead of calling the API.
+    if (value == true) {
+      showToast(context, 'Going online is under development.');
+      return;
+    }
+
     try {
       await widget.state.toggleOnline(value);
       if (value == false && mounted) {
@@ -56,26 +94,46 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<void> _createDemo() async {
+    if (_creating) return;
+
     setState(() => _creating = true);
+
+    // Local preview order: this does not require a backend request.
+    final demoOrder = <String, dynamic>{
+      'id': 'DEMO-VPN-2025',
+      'orderCode': 'VPN-2025',
+      'status': 'assigned',
+      'distanceKm': 3.2,
+      'etaMinutes': 18,
+      'payBasePaise': 8500,
+      'payDistancePaise': 0,
+      'tipPaise': 0,
+      'customerName': 'Priya Sharma',
+      'customerPhoneMasked': 'XXXXXX',
+      'dropAddress': '24, 2nd Avenue, Anna Nagar East, Chennai 600102',
+      'dropInstructions': 'Ring the bell twice. Leave with security if not home.',
+      'dropLat': 0,
+      'dropLng': 0,
+      'pickup': <String, dynamic>{'lat': 0, 'lng': 0},
+      'crates': <Map<String, dynamic>>[],
+      'timeline': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'status': 'assigned',
+          'at': DateTime.now().toIso8601String(),
+        },
+      ],
+    };
+
     try {
-      final res = await widget.state.api.post('/v1/demo-order');
-      final map = res is Map ? Map<String, dynamic>.from(res) : null;
-      if (!mounted || map == null) return;
-      showToast(
-          context,
-          AppLocalizations.of(context).demoCreated(
-              asString(map['orderCode']), asString(map['demoCode'], '7391')));
-      await _load();
-      if (!mounted) return;
-      await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => OrderDetailScreen(state: widget.state, orderId: asString(map['orderId'])),
-      ));
-      await _load();
-    } catch (e) {
-      if (mounted) {
-        showToast(context,
-            e is ApiException ? e.message : AppLocalizations.of(context).errDemo);
-      }
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OrderDetailScreen(
+            state: widget.state,
+            orderId: 'DEMO-VPN-2025',
+            demoOrder: demoOrder,
+          ),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _creating = false);
     }
@@ -135,9 +193,11 @@ class _HomeTabState extends State<HomeTab> {
     final online = state.online;
     final next = _orders.isNotEmpty ? _orders.first : null;
     final queued = _orders.length - 1;
-    final net = asInt(_earnings?['netPaise']);
-    final available = asInt(_earnings?['availableBalancePaise']);
-    final deliveries = asInt(_earnings?['deliveries']);
+    // Include locally completed demo deliveries in the Home summary.
+    // Real backend earnings can be connected here when API loading is enabled.
+    final net = state.demoEarningsToday;
+    final available = state.demoAvailableEarnings;
+    final deliveries = state.demoDeliveriesToday;
 
     return DesignCanvas(
       bottomNav: BottomNav(
@@ -498,19 +558,42 @@ class _HomeTabState extends State<HomeTab> {
             DTxt(l.viewEarnings, x: 37, y: 668, s: 13, wt: FontWeight.w500, lh: 18.2, c: C.green, onTap: () => widget.onOpenTab(2)),
           ],
 
-          // earnings strip
-          const DBox(x: 20, y: 724, w: 372, h: 70, r: 22, bg: Color(0xFFEEF5DB)),
-          DTxt(l.todayEarned(money(net)), x: 37, y: 739, s: 14, wt: FontWeight.w700, lh: 22.4),
-          DTxt(l.availableToWithdraw(money(available)), x: 37, y: 761, w: 280, s: 11, lh: 18.2, c: C.muted),
-          Positioned(
-            left: 330,
-            top: 739,
-            width: 40,
-            height: 40,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => widget.onOpenTab(2),
-              child: const Center(child: Icon(LucideIcons.star, size: 20, color: C.green)),
+          // Entire Today Earned / Available to withdraw card opens Bank payout.
+          DBox(
+            x: 20,
+            y: 724,
+            w: 372,
+            h: 70,
+            r: 22,
+            bg: const Color(0xFFEEF5DB),
+            onTap: _openBankPayout,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(17, 12, 48, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    l.todayEarned(money(net)),
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      height: 22.4 / 14,
+                      color: C.ink,
+                    ),
+                  ),
+                  Text(
+                    l.availableToWithdraw(money(available)),
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      height: 18.2 / 11,
+                      color: C.muted,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

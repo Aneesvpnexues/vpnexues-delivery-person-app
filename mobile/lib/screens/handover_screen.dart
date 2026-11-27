@@ -9,10 +9,18 @@ import '../ui/design.dart';
 import 'delivered_screen.dart';
 
 class HandOverScreen extends StatefulWidget {
-  const HandOverScreen({super.key, required this.state, required this.orderId});
+  const HandOverScreen({
+    super.key,
+    required this.state,
+    required this.orderId,
+    this.demoOrder,
+  });
 
   final AppState state;
   final String orderId;
+  final Map<String, dynamic>? demoOrder;
+
+  bool get isDemo => demoOrder != null;
 
   @override
   State<HandOverScreen> createState() => _HandOverScreenState();
@@ -35,7 +43,12 @@ class _HandOverScreenState extends State<HandOverScreen> {
         if (_nodes[idx].hasFocus && mounted) setState(() => _focus = idx);
       });
     }
-    _load();
+    if (widget.demoOrder != null) {
+      _order = Map<String, dynamic>.from(widget.demoOrder!);
+      _loading = false;
+    } else {
+      _load();
+    }
   }
 
   @override
@@ -50,6 +63,15 @@ class _HandOverScreenState extends State<HandOverScreen> {
   }
 
   Future<void> _load() async {
+    if (widget.isDemo) {
+      if (!mounted) return;
+      setState(() {
+        _order = Map<String, dynamic>.from(widget.demoOrder!);
+        _loading = false;
+      });
+      return;
+    }
+
     try {
       final res = await widget.state.api.get('/v1/orders/${widget.orderId}');
       if (!mounted) return;
@@ -77,6 +99,59 @@ class _HandOverScreenState extends State<HandOverScreen> {
       showToast(context, 'Enter the 4-digit code from the customer');
       return;
     }
+    if (widget.isDemo) {
+      if (code != '7391') {
+        showToast(context, 'Demo delivery code is incorrect. Use 7391.');
+        for (final controller in _controllers) {
+          controller.clear();
+        }
+        _nodes[0].requestFocus();
+        return;
+      }
+      final deliveredOrder = Map<String, dynamic>.from(_order ?? widget.demoOrder!);
+      deliveredOrder['status'] = 'delivered';
+      deliveredOrder['deliveredAt'] = DateTime.now().toIso8601String();
+      deliveredOrder['payBasePaise'] = asInt(deliveredOrder['payBasePaise']) == 0
+          ? 6000
+          : asInt(deliveredOrder['payBasePaise']);
+      deliveredOrder['payDistancePaise'] = asInt(deliveredOrder['payDistancePaise']) == 0
+          ? 2500
+          : asInt(deliveredOrder['payDistancePaise']);
+      deliveredOrder['tipPaise'] = asInt(deliveredOrder['tipPaise']);
+      deliveredOrder['distanceKm'] = asDouble(deliveredOrder['distanceKm']) == 0
+          ? 3.2
+          : asDouble(deliveredOrder['distanceKm']);
+
+      final updatedTimeline = mapList(deliveredOrder['timeline'])
+          .map((event) => Map<String, dynamic>.from(event))
+          .toList();
+      updatedTimeline.add({
+        'status': 'delivered',
+        'at': DateTime.now().toIso8601String(),
+      });
+      deliveredOrder['timeline'] = updatedTimeline;
+      deliveredOrder['earningPaise'] =
+          asInt(deliveredOrder['payBasePaise']) +
+          asInt(deliveredOrder['payDistancePaise']) +
+          asInt(deliveredOrder['tipPaise']);
+
+      // Save the completed demo order in shared app state so Orders > Completed
+      // can display it after leaving the Delivered screen.
+      widget.state.upsertDemoOrder(deliveredOrder);
+
+      if (!mounted) return;
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => DeliveredScreen(
+            state: widget.state,
+            orderId: widget.orderId,
+            demoOrder: deliveredOrder,
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _busy = true);
     try {
       await widget.state.api.post('/v1/orders/${widget.orderId}/deliver', body: {'code': code});
@@ -261,7 +336,7 @@ class _HandOverScreenState extends State<HandOverScreen> {
               ),
             ),
 
-          Btn(y: 840, label: _busy ? 'CONFIRMING…' : 'CONFIRM DELIVERY', onTap: _busy ? null : _confirm),
+          Btn(y: 816, label: _busy ? 'CONFIRMING…' : 'CONFIRM DELIVERY', onTap: _busy ? null : _confirm),
         ],
       ),
     );

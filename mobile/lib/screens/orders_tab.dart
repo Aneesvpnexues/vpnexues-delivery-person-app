@@ -21,7 +21,7 @@ class OrdersTab extends StatefulWidget {
 class _OrdersTabState extends State<OrdersTab> {
   String _tab = 'active';
   String _range = 'today';
-  final List _items = [];
+  final List<Map<String, dynamic>> _items = [];
   bool _loading = true;
   bool _searchOpen = false;
   final _search = TextEditingController();
@@ -32,18 +32,42 @@ class _OrdersTabState extends State<OrdersTab> {
   @override
   void initState() {
     super.initState();
+    widget.state.addListener(_onAppStateChanged);
     _load();
+  }
+
+  void _onAppStateChanged() {
+    if (mounted) _load();
   }
 
   @override
   void dispose() {
+    widget.state.removeListener(_onAppStateChanged);
     _search.dispose();
     super.dispose();
   }
 
   Future<void> _load() async {
-    // Temporary dev mode: no server calls from splash to home screen.
-    setState(() => _loading = false);
+    // Demo orders are held in AppState, so the Completed tab can refresh
+    // immediately without depending on the backend.
+    if (!mounted) return;
+    setState(() {
+      _items
+        ..clear()
+        ..addAll(
+          widget.state.demoOrders.where((order) {
+            final status = asString(order['status']);
+            if (_tab == 'completed') {
+              return status == 'delivered' || status == 'cancelled';
+            }
+            if (_tab == 'upcoming') {
+              return status == 'scheduled';
+            }
+            return status != 'delivered' && status != 'cancelled' && status != 'scheduled';
+          }).map((order) => Map<String, dynamic>.from(order)),
+        );
+      _loading = false;
+    });
   }
 
   Future<void> _setOnline() async {

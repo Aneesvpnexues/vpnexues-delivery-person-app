@@ -78,6 +78,10 @@ class ApiClient {
   static const _kSplashSeen = 'vpnexues.splashSeen';
   static const _kSignupDraft = 'vpnexues.signupDraft';
   static const _kLoginPhone = 'vpnexues.loginPhone';
+  static const _kLocalPartner = 'vpnexues.localPartner';
+
+  /// Development sessions use a local token and do not require the API.
+  bool get isLocalSession => accessToken?.startsWith('dev-') ?? false;
 
   bool get splashSeen => _prefs.getBool(_kSplashSeen) ?? false;
   Future<void> markSplashSeen() => _prefs.setBool(_kSplashSeen, true);
@@ -101,6 +105,31 @@ class ApiClient {
   String? getLoginPhone() => _prefs.getString(_kLoginPhone);
   Future<void> saveLoginPhone(String phone) =>
       _prefs.setString(_kLoginPhone, phone);
+
+  /// Reads the locally saved partner profile used when the backend is offline.
+  Map<String, dynamic>? getLocalPartner() {
+    final raw = _prefs.getString(_kLocalPartner);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } catch (e) {
+      debugPrint('Local partner profile could not be decoded: $e');
+    }
+    return null;
+  }
+
+  /// Saves the partner profile locally for offline development sessions.
+  Future<void> saveLocalPartner(Map<String, dynamic> partner) async {
+    await _prefs.setString(_kLocalPartner, jsonEncode(partner));
+  }
+
+  /// Removes the local profile when the user logs out.
+  Future<void> clearLocalPartner() async {
+    await _prefs.remove(_kLocalPartner);
+  }
 
   Future<void> setTokens(Map<String, dynamic> tokens) async {
     // Login/OTP verification always issues a new refresh token. Requiring it
