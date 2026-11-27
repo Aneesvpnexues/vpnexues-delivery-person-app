@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:country_code_picker/country_code_picker.dart';
 
 import '../core/api_client.dart';
 import '../state/app_state.dart';
@@ -31,6 +32,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final _scrollController = ScrollController();
 
+  String _selectedCountryCode = '+91';
+  String _selectedCountryIso = 'IN';
   String _tab = 'password';
   bool _show = false;
   bool _keep = true;
@@ -80,10 +83,12 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _submittedOnce = true);
     }
 
-    final phone = _mobile.text.replaceAll(RegExp(r'\D'), '');
-    if (phone.length < 10) {
+    final nationalNumber = _mobile.text.replaceAll(RegExp(r'\D'), '');
+    final phone = '$_selectedCountryCode$nationalNumber';
+    final internationalDigits = phone.replaceAll(RegExp(r'\D'), '');
+    if (internationalDigits.length < 8 || internationalDigits.length > 15) {
       HapticFeedback.lightImpact();
-      showToast(context, 'Enter your 10-digit mobile number');
+      showToast(context, 'Enter a valid international mobile number');
       return;
     }
     if (_tab == 'password' && _password.text.isEmpty) {
@@ -527,22 +532,138 @@ class _LoginScreenState extends State<LoginScreen> {
         _LoginInputContainer(
           focused: _mobileFocus.hasFocus,
           hasError: hasError,
+          leadingGap: 8,
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                '+91',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: C.ink,
+              SizedBox(
+                width: 82,
+                child: CountryCodePicker(
+                  initialSelection: _selectedCountryIso,
+                  favorite: const ['+91', '+94', '+1', '+44'],
+                  showCountryOnly: false,
+                  showOnlyCountryWhenClosed: false,
+                  showFlag: true,
+                  showDropDownButton: false,
+                  flagWidth: 20,
+                  alignLeft: true,
+                  padding: EdgeInsets.zero,
+                  builder: (countryCode) {
+                    final flagUri = countryCode?.flagUri;
+                    final dialCode =
+                        countryCode?.dialCode ?? _selectedCountryCode;
+
+                    return SizedBox(
+                      height: 44,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (flagUri != null && flagUri.isNotEmpty)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: Image.asset(
+                                flagUri,
+                                package: 'country_code_picker',
+                                width: 20,
+                                height: 15,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              dialCode,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: C.ink,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  onChanged: (country) {
+                    final newCode = country.dialCode ?? '+91';
+                    final newIso = country.code ?? 'IN';
+
+                    setState(() {
+                      _selectedCountryCode = newCode;
+                      _selectedCountryIso = newIso;
+
+                      // Keep the typed national number while respecting E.164.
+                      final currentDigits =
+                          _mobile.text.replaceAll(RegExp(r'\D'), '');
+                      final maxDigits = (15 -
+                              newCode.replaceAll(RegExp(r'\D'), '').length)
+                          .clamp(1, 15)
+                          .toInt();
+                      if (currentDigits.length > maxDigits) {
+                        _mobile.text = currentDigits.substring(0, maxDigits);
+                        _mobile.selection = TextSelection.collapsed(
+                          offset: _mobile.text.length,
+                        );
+                      }
+                      if (_submittedOnce) _submittedOnce = false;
+                    });
+                    HapticFeedback.selectionClick();
+                  },
+                  dialogSize: Size(
+                    MediaQuery.sizeOf(context).width * 0.9,
+                    MediaQuery.sizeOf(context).height * 0.72,
+                  ),
+                  searchDecoration: InputDecoration(
+                    hintText: 'Search country or calling code',
+                    hintStyle: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF8A978F),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      size: 20,
+                      color: Color(0xFF718078),
+                    ),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 46,
+                      minHeight: 48,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF7F9F5),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFDCE4D9),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF247947),
+                        width: 1.4,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 18,
+                color: C.muted,
+              ),
+              const SizedBox(width: 8),
               Container(
                 width: 1,
-                height: 22,
+                height: 24,
                 color: C.line,
               ),
             ],
@@ -557,7 +678,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 _tab == 'password' ? TextInputAction.next : TextInputAction.done,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
+              LengthLimitingTextInputFormatter(
+                (15 - _selectedCountryCode.replaceAll(RegExp(r'\D'), '').length)
+                    .clamp(1, 15)
+                    .toInt(),
+              ),
             ],
             onSubmitted: (_) {
               if (_tab == 'password') {
@@ -584,7 +709,7 @@ class _LoginScreenState extends State<LoginScreen> {
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
-              hintText: '10-digit number',
+              hintText: 'Mobile number',
               hintStyle: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 16,
@@ -863,6 +988,7 @@ class _LoginInputContainer extends StatelessWidget {
     required this.child,
     this.leading,
     this.trailing,
+    this.leadingGap = 12,
   });
 
   final bool focused;
@@ -870,6 +996,7 @@ class _LoginInputContainer extends StatelessWidget {
   final Widget? leading;
   final Widget? trailing;
   final Widget child;
+  final double leadingGap;
 
   @override
   Widget build(BuildContext context) {
@@ -907,7 +1034,7 @@ class _LoginInputContainer extends StatelessWidget {
         children: [
           if (leading != null) ...[
             leading!,
-            const SizedBox(width: 12),
+            SizedBox(width: leadingGap),
           ],
           Expanded(child: child),
           if (trailing != null) ...[

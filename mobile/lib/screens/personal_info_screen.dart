@@ -115,10 +115,91 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   @override
   Widget build(BuildContext context) {
     final me = widget.state.partner ?? {};
-    final phone = asString(me['phone']).replaceFirst('+91', '');
-    final masked = phone.length == 10
-        ? '+91 ${phone.substring(0, 5)} ${phone.substring(5)}'
-        : '+91 $phone';
+
+    // Resolve the complete international number. Signup stores the national
+    // number and selected calling code separately, while the verified profile
+    // or login phone may already contain the complete international number.
+    final draft = widget.state.signupDraft;
+    final draftCountryCode =
+        asString(draft['countryCode'], '+91').trim();
+    final draftCountryDigits =
+        draftCountryCode.replaceAll(RegExp(r'\D'), '');
+
+    String formatPhoneCandidate(String raw) {
+      final value = raw.trim();
+      if (value.isEmpty) return '';
+
+      final digits = value.replaceAll(RegExp(r'\D'), '');
+      if (digits.isEmpty) return '';
+
+      String internationalDigits;
+
+      if (value.startsWith('+')) {
+        internationalDigits = digits;
+      } else if (value.startsWith('00') && digits.length > 2) {
+        internationalDigits = digits.substring(2);
+      } else if (draftCountryDigits.isNotEmpty &&
+          digits.startsWith(draftCountryDigits) &&
+          digits.length > draftCountryDigits.length) {
+        // The value already includes the selected calling code.
+        internationalDigits = digits;
+      } else if (draftCountryDigits.isNotEmpty) {
+        // Signup draft keeps the national number separately from countryCode.
+        var nationalDigits = digits;
+        if (nationalDigits.startsWith('0') && nationalDigits.length > 1) {
+          nationalDigits = nationalDigits.substring(1);
+        }
+        internationalDigits = '$draftCountryDigits$nationalDigits';
+      } else if (digits.length == 11 && digits.startsWith('0')) {
+        internationalDigits = '91${digits.substring(1)}';
+      } else if (digits.length == 10) {
+        // Backward compatibility for older Indian signup/login records.
+        internationalDigits = '91$digits';
+      } else {
+        internationalDigits = digits;
+      }
+
+      if (internationalDigits.length < 8 ||
+          internationalDigits.length > 15) {
+        return '';
+      }
+
+      // Use the saved calling code when it matches. This keeps the display
+      // correct for countries with different calling-code lengths.
+      String callingCode = '';
+      if (draftCountryDigits.isNotEmpty &&
+          internationalDigits.startsWith(draftCountryDigits) &&
+          internationalDigits.length > draftCountryDigits.length) {
+        callingCode = draftCountryDigits;
+      } else if (internationalDigits.startsWith('91') &&
+          internationalDigits.length == 12) {
+        callingCode = '91';
+      }
+
+      if (callingCode.isEmpty) {
+        return '+$internationalDigits';
+      }
+
+      final national = internationalDigits.substring(callingCode.length);
+      if (national.length > 5) {
+        final split = national.length - 4;
+        return '+$callingCode ${national.substring(0, split)} ${national.substring(split)}';
+      }
+      return '+$callingCode $national';
+    }
+
+    final phoneCandidates = <String>[
+      asString(me['phone']),
+      widget.state.api.getLoginPhone() ?? '',
+      asString(draft['phone']),
+    ];
+
+    final formattedPhones = phoneCandidates
+        .map(formatPhoneCandidate)
+        .where((value) => value.isNotEmpty)
+        .toList();
+
+    final masked = formattedPhones.isNotEmpty ? formattedPhones.first : 'Not available';
 
     return DesignCanvas(
       child: Stack(

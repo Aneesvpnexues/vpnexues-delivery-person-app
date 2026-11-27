@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../core/api_client.dart';
 import '../core/format.dart';
 import '../state/app_state.dart';
 import '../ui/design.dart';
@@ -17,6 +16,7 @@ class DocsScreen extends StatefulWidget {
     if (d == null) return ('Not added', pillBad.bg, pillBad.fg);
 
     final status = asString(d['status']);
+    if (status == 'uploaded') return ('Uploaded', pillInfo.bg, pillInfo.fg);
 
     if (status == 'verified') {
       return asBool(d['expiringSoon'])
@@ -41,6 +41,7 @@ class DocsScreen extends StatefulWidget {
 
   static String subFor(Map<String, dynamic>? d) {
     if (d == null) return 'Tap to upload';
+    if (asString(d['fileName']).isNotEmpty) return asString(d['fileName']);
 
     if (asString(d['rejectionReason']).isNotEmpty) {
       return asString(d['rejectionReason']);
@@ -85,42 +86,25 @@ class _DocsScreenState extends State<DocsScreen> {
     [Color(0xFFFFF2BB), Color(0xFFFDE492)],
   ];
 
-  Map<String, dynamic>? _data;
-  bool _loading = true;
-
   @override
   void initState() {
     super.initState();
-    _load();
+    widget.state.addListener(_onDocumentsChanged);
   }
 
-  Future<void> _load() async {
-    try {
-      final res = await widget.state.api.get('/v1/documents');
-
-      if (!mounted) return;
-
-      setState(() {
-        _data = res is Map ? Map<String, dynamic>.from(res) : null;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() => _loading = false);
-
-      showToast(
-        context,
-        e is ApiException ? e.message : 'Could not load documents',
-      );
-    }
+  @override
+  void dispose() {
+    widget.state.removeListener(_onDocumentsChanged);
+    super.dispose();
   }
 
-  Future<void> _upload(
-    String type,
-    Map<String, dynamic>? existing,
-  ) async {
-    final ok = await Navigator.of(context).push<bool>(
+  void _onDocumentsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _upload(String type) async {
+    final existing = widget.state.getLocalDocument(type);
+    final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => DocumentUploadScreen(
           state: widget.state,
@@ -130,30 +114,21 @@ class _DocsScreenState extends State<DocsScreen> {
       ),
     );
 
-    if (ok == true && mounted) {
-      showToast(context, '${docLabel(type)} submitted for review');
-      await _load();
-      await widget.state.loadMe();
+    if (saved == true && mounted) {
+      showToast(context, '${docLabel(type)} saved on this device session');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final docs = mapList(_data?['documents']);
-    final byType = {
-      for (final d in docs) asString(d['type']): d,
-    };
-
-    final attention = docs
-        .where(
-          (d) =>
-              asBool(d['expiringSoon']) ||
-              ['rejected', 'expired'].contains(asString(d['status'])),
-        )
-        .toList();
-
-    final missing = stringList(_data?['missing'])
-        .where((t) => t != 'selfie')
+    final byType = <String, Map<String, dynamic>>{};
+    for (final entry in widget.state.localDocuments.entries) {
+      byType[entry.key] = entry.value;
+    }
+    final attention = <Map<String, dynamic>>[];
+    final missing = _grid
+        .map((item) => item.$1)
+        .where((type) => !byType.containsKey(type))
         .toList();
 
     return DesignCanvas(
@@ -167,12 +142,7 @@ class _DocsScreenState extends State<DocsScreen> {
             icon: LucideIcons.plus,
             x: 344,
             y: 41,
-            onTap: () => _upload(
-              missing.isNotEmpty ? missing.first : 'aadhaar',
-              byType[
-                missing.isNotEmpty ? missing.first : 'aadhaar'
-              ],
-            ),
+            onTap: () => _upload(missing.isNotEmpty ? missing.first : 'aadhaar'),
           ),
 
           if (attention.isNotEmpty || missing.isNotEmpty) ...[
@@ -220,16 +190,7 @@ class _DocsScreenState extends State<DocsScreen> {
                 fs: 13,
                 kind: BtnKind.yellow,
                 label: attention.isNotEmpty ? 'UPDATE' : 'UPLOAD',
-                onTap: () => _upload(
-                  attention.isNotEmpty
-                      ? asString(attention.first['type'])
-                      : missing.first,
-                  byType[
-                    attention.isNotEmpty
-                        ? asString(attention.first['type'])
-                        : missing.first
-                  ],
-                ),
+                onTap: () => _upload(missing.isNotEmpty ? missing.first : 'aadhaar'),
               ),
             ),
           ] else ...[
@@ -256,9 +217,9 @@ class _DocsScreenState extends State<DocsScreen> {
             ),
 
             DTxt(
-              _loading
-                  ? 'Loading your documents…'
-                  : 'All your documents are up to date.',
+              missing.isNotEmpty
+                  ? '${missing.length} document${missing.length == 1 ? '' : 's'} still to add.'
+                  : 'All your documents have been selected.',
               x: 64,
               y: 125,
               w: 300,
@@ -352,7 +313,7 @@ class _DocsScreenState extends State<DocsScreen> {
       width: 180,
       height: 188,
       child: GestureDetector(
-        onTap: () => _upload(type, d),
+        onTap: () => _upload(type),
         child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(

@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,13 +22,12 @@ class UploadDocsScreen extends StatefulWidget {
 class _UploadDocsScreenState extends State<UploadDocsScreen> {
   final _scrollController = ScrollController();
 
-  final Map<String, bool> _uploaded = {
-    'aadhaar': false,
-    'pan': false,
-    'dl': false,
-    'rc': false,
-    'selfie': false,
-  };
+  final ImagePicker _picker = ImagePicker();
+
+  bool _isUploaded(String type) => widget.state.getLocalDocument(type) != null;
+
+  int get _uploadedCount => _docs.where((d) => _isUploaded(d.id)).length;
+  double get _progress => _uploadedCount / _docs.length;
 
   bool _busy = false;
 
@@ -74,8 +74,6 @@ class _UploadDocsScreenState extends State<UploadDocsScreen> {
     ),
   ];
 
-  int get _uploadedCount => _uploaded.values.where((v) => v).length;
-  double get _progress => _uploadedCount / _docs.length;
 
   @override
   void dispose() {
@@ -138,7 +136,7 @@ class _UploadDocsScreenState extends State<UploadDocsScreen> {
                   label: doc.isSelfie ? 'Open front camera' : 'Take photo',
                   onTap: () {
                     Navigator.of(sheetCtx).pop();
-                    _markUploaded(doc);
+                    _pickDocument(doc, ImageSource.camera);
                   },
                 ),
                 if (!doc.isSelfie) ...[
@@ -148,7 +146,7 @@ class _UploadDocsScreenState extends State<UploadDocsScreen> {
                     label: 'Choose from gallery',
                     onTap: () {
                       Navigator.of(sheetCtx).pop();
-                      _markUploaded(doc);
+                      _pickDocument(doc, ImageSource.gallery);
                     },
                   ),
                 ],
@@ -160,17 +158,39 @@ class _UploadDocsScreenState extends State<UploadDocsScreen> {
     );
   }
 
-  void _markUploaded(_DocItem doc) {
-    HapticFeedback.mediumImpact();
-    setState(() {
-      _uploaded[doc.id] = true;
-    });
-    showToast(
-      context,
-      doc.isSelfie
-          ? 'Live selfie captured'
-          : '${doc.title} uploaded',
-    );
+  Future<void> _pickDocument(_DocItem doc, ImageSource source) async {
+    try {
+      final file = await _picker.pickImage(
+        source: source,
+        preferredCameraDevice: doc.isSelfie
+            ? CameraDevice.front
+            : CameraDevice.rear,
+        maxWidth: 2200,
+        imageQuality: 85,
+      );
+
+      // A cancelled picker must not change the document status.
+      if (file == null || !mounted) return;
+
+      final bytes = await file.readAsBytes();
+      if (bytes.isEmpty || !mounted) return;
+
+      widget.state.saveLocalDocument(
+        type: doc.id,
+        bytes: bytes,
+        fileName: file.name,
+      );
+
+      HapticFeedback.mediumImpact();
+      setState(() {});
+      showToast(
+        context,
+        doc.isSelfie ? 'Live selfie selected' : '${doc.title} selected',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      showToast(context, 'Could not select the image. Please try again.');
+    }
   }
 
   void _continueToNext() {
@@ -255,7 +275,7 @@ class _UploadDocsScreenState extends State<UploadDocsScreen> {
                             for (var i = 0; i < _docs.length; i++) ...[
                               _DocUploadCard(
                                 doc: _docs[i],
-                                uploaded: _uploaded[_docs[i].id] ?? false,
+                                uploaded: _isUploaded(_docs[i].id),
                                 onTap: () => _openUploadSheet(_docs[i]),
                               ),
                               if (i < _docs.length - 1)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:country_code_picker/country_code_picker.dart';
 
 import '../core/cities.dart';
 import '../state/app_state.dart';
@@ -47,6 +48,8 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _pickCity = false;
 
   String _vehicle = 'Motorbike';
+  String _selectedCountryCode = '+91';
+  String _selectedCountryIso = 'IN';
   bool _agree = true;
   bool _busy = false;
   bool _submittedOnce = false;
@@ -137,7 +140,12 @@ class _SignupScreenState extends State<SignupScreen> {
     if (draft.isEmpty) return;
 
     _name.text = draft['fullName']?.toString() ?? '';
-    _mobile.text = draft['phone']?.toString() ?? '';
+    _selectedCountryCode = draft['countryCode']?.toString() ?? '+91';
+    _selectedCountryIso = draft['countryIso']?.toString() ?? 'IN';
+    final savedPhone = draft['phone']?.toString() ?? '';
+    _mobile.text = savedPhone.startsWith(_selectedCountryCode)
+        ? savedPhone.substring(_selectedCountryCode.length).replaceAll(RegExp(r'\D'), '')
+        : savedPhone.replaceAll(RegExp(r'\D'), '');
     _ref.text = draft['referralCode']?.toString() ?? '';
 
     if (draft['vehicleType'] != null) {
@@ -235,7 +243,8 @@ class _SignupScreenState extends State<SignupScreen> {
     }
 
     final name = _name.text.trim();
-    final phone = _mobile.text.replaceAll(RegExp(r'\D'), '');
+    final phoneNumber = _mobile.text.replaceAll(RegExp(r'\D'), '');
+    final phone = '$_selectedCountryCode$phoneNumber';
     final city = _cityCtl.text.trim();
 
     if (name.length < 2) {
@@ -244,9 +253,10 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    if (phone.length != 10) {
+    final internationalDigits = phone.replaceAll(RegExp(r'\D'), '');
+    if (internationalDigits.length < 8 || internationalDigits.length > 15) {
       HapticFeedback.lightImpact();
-      showToast(context, 'Enter your 10-digit mobile number');
+      showToast(context, 'Enter a valid international mobile number');
       return;
     }
 
@@ -292,7 +302,9 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       await widget.state.saveSignupDraft({
         'fullName': name,
-        'phone': phone,
+        'phone': phoneNumber,
+        'countryCode': _selectedCountryCode,
+        'countryIso': _selectedCountryIso,
         'cityId': _cityId,
         'cityName': city,
         'vehicleType': vehicles.firstWhere((v) => v.$1 == _vehicle).$2,
@@ -633,9 +645,20 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
+  /// Maximum national-number digits allowed by the E.164 limit (15 digits,
+  /// including the selected country calling code).
+  int get _maxNationalNumberDigits {
+    final callingCodeDigits =
+        _selectedCountryCode.replaceAll(RegExp(r'\\D'), '').length;
+    return (15 - callingCodeDigits).clamp(1, 15).toInt();
+  }
+
   Widget _buildMobileField() {
-    final digits = _mobile.text.replaceAll(RegExp(r'\D'), '');
-    final hasError = _submittedOnce && digits.length != 10;
+    final digits = _mobile.text.replaceAll(RegExp(r'\\D'), '');
+    final fullDigits =
+        '$_selectedCountryCode$digits'.replaceAll(RegExp(r'\\D'), '');
+    final hasError = _submittedOnce &&
+        (fullDigits.length < 8 || fullDigits.length > 15);
 
     return Column(
       key: _mobileKey,
@@ -655,22 +678,139 @@ class _SignupScreenState extends State<SignupScreen> {
         _SignupInputContainer(
           focused: _mobileFocus.hasFocus,
           hasError: hasError,
+          leadingGap: 8,
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                '+91',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: C.ink,
+              SizedBox(
+                width: 82,
+                child: CountryCodePicker(
+                  initialSelection: _selectedCountryIso,
+                  favorite: const ['+91', '+94', '+1', '+44'],
+                  showCountryOnly: false,
+                  showOnlyCountryWhenClosed: false,
+                  showFlag: true,
+                  showDropDownButton: false,
+                  flagWidth: 20,
+                  alignLeft: true,
+                  padding: EdgeInsets.zero,
+                  builder: (countryCode) {
+                    final flagUri = countryCode?.flagUri;
+                    final dialCode =
+                        countryCode?.dialCode ?? _selectedCountryCode;
+
+                    return SizedBox(
+                      height: 44,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (flagUri != null && flagUri.isNotEmpty)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: Image.asset(
+                                flagUri,
+                                package: 'country_code_picker',
+                                width: 20,
+                                height: 15,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              dialCode,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: C.ink,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  onChanged: (country) {
+                    final newCode = country.dialCode ?? '+91';
+                    final newIso = country.code ?? 'IN';
+                    setState(() {
+                      _selectedCountryCode = newCode;
+                      _selectedCountryIso = newIso;
+
+                      // Keep the entered number when changing countries, but
+                      // trim excess digits if the new calling code leaves
+                      // fewer digits available under the international limit.
+                      final currentDigits =
+                          _mobile.text.replaceAll(RegExp(r'\\D'), '');
+                      final maxDigits = (15 -
+                              newCode.replaceAll(RegExp(r'\\D'), '').length)
+                          .clamp(1, 15)
+                          .toInt();
+                      if (currentDigits.length > maxDigits) {
+                        _mobile.text = currentDigits.substring(0, maxDigits);
+                        _mobile.selection = TextSelection.collapsed(
+                          offset: _mobile.text.length,
+                        );
+                      }
+                      if (_submittedOnce) _submittedOnce = false;
+                    });
+                    HapticFeedback.selectionClick();
+                  },
+                  dialogSize: Size(
+                    MediaQuery.sizeOf(context).width * 0.9,
+                    MediaQuery.sizeOf(context).height * 0.72,
+                  ),
+                  searchDecoration: InputDecoration(
+                    hintText: 'Search country or calling code',
+                    hintStyle: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF8A978F),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      size: 20,
+                      color: Color(0xFF718078),
+                    ),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 46,
+                      minHeight: 48,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF7F9F5),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFDCE4D9),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF247947),
+                        width: 1.4,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 18,
+                color: C.muted,
+              ),
+              const SizedBox(width: 8),
               Container(
                 width: 1,
-                height: 22,
+                height: 24,
                 color: C.line,
               ),
             ],
@@ -684,7 +824,7 @@ class _SignupScreenState extends State<SignupScreen> {
             textInputAction: TextInputAction.next,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
+              LengthLimitingTextInputFormatter(_maxNationalNumberDigits),
             ],
             onSubmitted: (_) => _cityFocus.requestFocus(),
             onChanged: (_) {
@@ -705,10 +845,10 @@ class _SignupScreenState extends State<SignupScreen> {
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
-              hintText: '10-digit number',
+              hintText: 'Mobile number',
               hintStyle: TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w500,
                 height: 1.25,
                 color: Color(0xFF9AA69E),
@@ -719,7 +859,7 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         const SizedBox(height: 6),
         const Text(
-          'We will send a 6-digit OTP to this number.',
+          'Include your number without the country code.',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 12,
@@ -728,6 +868,17 @@ class _SignupScreenState extends State<SignupScreen> {
             color: C.muted,
           ),
         ),
+        if (hasError) ...[
+          const SizedBox(height: 4),
+          const Text(
+            'Enter a valid mobile number with 8–15 digits including the country code.',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11,
+              color: Color(0xFFB3261E),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1306,6 +1457,7 @@ class _SignupInputContainer extends StatelessWidget {
     required this.child,
     this.leading,
     this.trailing,
+    this.leadingGap = 12,
   });
 
   final bool focused;
@@ -1313,6 +1465,7 @@ class _SignupInputContainer extends StatelessWidget {
   final Widget? leading;
   final Widget? trailing;
   final Widget child;
+  final double leadingGap;
 
   @override
   Widget build(BuildContext context) {
@@ -1350,7 +1503,7 @@ class _SignupInputContainer extends StatelessWidget {
         children: [
           if (leading != null) ...[
             leading!,
-            const SizedBox(width: 12),
+            SizedBox(width: leadingGap),
           ],
           Expanded(child: child),
           if (trailing != null) ...[

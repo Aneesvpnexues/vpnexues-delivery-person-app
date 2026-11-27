@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/widgets.dart';
 
 import '../core/api_client.dart';
@@ -23,6 +25,55 @@ class AppState extends ChangeNotifier {
   Future<void>? _resuming;
   Map<String, dynamic>? partner;
   Map<String, dynamic> settings = {};
+
+  // Frontend-only document selections shared by signup and My Documents.
+  // These remain in memory for the current app session; no files are sent to an API.
+  final Map<String, Map<String, dynamic>> localDocuments = {};
+
+  static String documentTypeKey(String type) {
+    switch (type) {
+      case 'dl':
+      case 'driving_licence':
+        return 'driving_licence';
+      case 'rc':
+      case 'vehicle_rc':
+        return 'vehicle_rc';
+      default:
+        return type;
+    }
+  }
+
+  Map<String, dynamic>? getLocalDocument(String type) =>
+      localDocuments[documentTypeKey(type)];
+
+  void saveLocalDocument({
+    required String type,
+    required Uint8List bytes,
+    required String fileName,
+    String? number,
+    DateTime? validUntil,
+    bool consent = true,
+  }) {
+    final key = documentTypeKey(type);
+    localDocuments[key] = {
+      'type': key,
+      'status': 'uploaded',
+      'bytes': bytes,
+      'fileName': fileName,
+      'numberMasked': number == null || number.trim().isEmpty
+          ? ''
+          : '•••• ${number.trim().length > 4 ? number.trim().substring(number.trim().length - 4) : number.trim()}',
+      'validUntil': validUntil?.toIso8601String(),
+      'consent': consent,
+      'submittedAt': DateTime.now().toIso8601String(),
+    };
+    notifyListeners();
+  }
+
+  void clearLocalDocument(String type) {
+    localDocuments.remove(documentTypeKey(type));
+    notifyListeners();
+  }
 
   List<Map<String, dynamic>> cities = [];
   bool citiesLoading = false;
@@ -265,10 +316,29 @@ class AppState extends ChangeNotifier {
       await api.flushPendingLogout();
       await loadCities();
       if (api.hasSession) {
-        await api.ensureFreshToken();
-        await loadMe();
+        if (api.isLocalSession) {
+          // Restore the locally saved profile instead of calling /v1/me.
+          partner = api.getLocalPartner();
+          if (partner == null) {
+            final phone = api.accessToken?.replaceFirst('dev-', '') ?? '';
+            partner = <String, dynamic>{
+              'id': 'dev',
+              'fullName': phone.isEmpty ? 'Partner' : phone,
+              'phone': phone,
+              'isOnline': false,
+              'kycStatus': 'not_started',
+            };
+            await api.saveLocalPartner(partner!);
+          }
+          offline = true;
+        } else {
+          await api.ensureFreshToken();
+          await loadMe();
+          offline = false;
+        }
+      } else {
+        offline = false;
       }
-      offline = false;
     } on ApiException catch (e) {
       if (_invalidSession(e)) {
         await api.expireSession();
@@ -299,9 +369,14 @@ class AppState extends ChangeNotifier {
   Future<void> _doResume() async {
     try {
       await api.flushPendingLogout();
-      await api.ensureFreshToken();
-      await loadMe();
-      offline = false;
+      if (api.isLocalSession) {
+        partner = api.getLocalPartner() ?? partner;
+        offline = true;
+      } else {
+        await api.ensureFreshToken();
+        await loadMe();
+        offline = false;
+      }
     } on ApiException catch (e) {
       if (_invalidSession(e)) {
         await api.expireSession();
@@ -353,6 +428,12 @@ class AppState extends ChangeNotifier {
   // --------------------------------------------------
 
   Future<void> loadMe() async {
+    if (api.isLocalSession) {
+      partner = api.getLocalPartner() ?? partner;
+      if (!_disposed) notifyListeners();
+      return;
+    }
+
     final res = await api.get('/v1/me');
 
     partner = Map<String, dynamic>.from(res as Map);
@@ -441,7 +522,10 @@ class AppState extends ChangeNotifier {
       'fullName': phone,
       'phone': phone,
       'isOnline': true,
+      'kycStatus': 'not_started',
     };
+    await api.saveLocalPartner(partner!);
+    offline = true;
 
     if (!_disposed) {
       notifyListeners();
@@ -509,6 +593,19 @@ class AppState extends ChangeNotifier {
       'accessToken': 'dev-$phone',
       'refreshToken': 'dev',
     });
+
+    final draft = signupDraft;
+    partner = <String, dynamic>{
+      ...draft,
+      'id': 'dev',
+      'fullName': asString(draft['fullName'], 'Partner'),
+      'phone': phone,
+      'isOnline': false,
+      'kycStatus': 'not_started',
+    };
+    await api.saveLocalPartner(partner!);
+    offline = true;
+    if (!_disposed) notifyListeners();
   }
 
   // --------------------------------------------------
@@ -655,6 +752,7 @@ class AppState extends ChangeNotifier {
           // Offline/server failure: keep a one-shot revocation token in secure
           // storage and flush it on the next boot or resume.
           await api.clear(retainForRevocation: true);
+          await api.clearLocalPartner();
           _clearSessionState();
           offline = true;
           _notify();
@@ -664,6 +762,7 @@ class AppState extends ChangeNotifier {
       } catch (e) {
         debugPrint('Remote logout failed: $e');
         await api.clear(retainForRevocation: true);
+        await api.clearLocalPartner();
         _clearSessionState();
         offline = true;
         _notify();
@@ -671,6 +770,7 @@ class AppState extends ChangeNotifier {
       }
     }
     await api.clear();
+    await api.clearLocalPartner();
     _clearSessionState();
     _notify();
   }

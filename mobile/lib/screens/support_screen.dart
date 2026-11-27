@@ -151,7 +151,7 @@ class _SupportScreenState extends State<SupportScreen> {
                       focusedErrorBorder: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
-                      hintText: 'Search: payout, OTP, insurance�?�',
+                      hintText: 'Search: payout, OTP, insurance',
                       hintStyle: TextStyle(color: C.muted, fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                   ),
