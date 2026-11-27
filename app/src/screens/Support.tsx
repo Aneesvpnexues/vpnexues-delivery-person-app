@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ChevronDown, ChevronRight, ChevronUp, File, Landmark, Leaf, Lock, Map, MessageCircle, Navigation, Package, Phone as PhoneIcon, Plus, Search, Shield, ShieldCheck, Star, TriangleAlert, Wallet, Zap, type LucideIcon } from 'lucide-react'
 import Phone from '../components/Phone'
 import { Box, Btn, C, Field, Header, Ic, Logo, Modal, P, Pill, RoundBtn, Screen, T, Tile, card, pill, toast, useGoBack } from '../components/kit'
+import { mobileError, nameError } from '../lib/validate'
 import { api, showError } from '../api/client'
 import { firstName, initials, maskPhone, time, date, useApi, useSession } from '../api/session'
 import type { Notification, OrderListItem } from '../api/types'
@@ -262,8 +263,10 @@ export function SOS() {
   useEffect(() => stop, [])
   const saveContact = async () => {
     if (!add) return
+    const bad = nameError(add.name, 'the contact’s name') || (add.relationship.trim().length < 2 ? 'Enter your relationship, like Father or Friend' : '') || mobileError(add.phone)
+    if (bad) return toast(bad)
     try {
-      await api('/v1/emergency-contacts', { body: add })
+      await api('/v1/emergency-contacts', { body: { ...add, name: add.name.trim(), relationship: add.relationship.trim(), phone: add.phone.replace(/\D/g, '').slice(-10) } })
       toast('Emergency contact saved')
       setAdd(null)
       await contacts.reload()

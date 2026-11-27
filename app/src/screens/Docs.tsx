@@ -5,6 +5,7 @@ import { Box, Btn, C, Field, Header, Ic, LinkText, Modal, P, Pill, RoundBtn, Scr
 import { api, showError } from '../api/client'
 import { date, useApi, useSession } from '../api/session'
 import { DOC_LABEL, quickUpload } from '../api/upload'
+import { vehicleRegError, yearError } from '../lib/validate'
 import type { DocType, DocumentsResponse, PartnerDocument, Vehicle as VehicleT } from '../api/types'
 import rider from '../assets/art/rider.png'
 
@@ -46,7 +47,14 @@ export function DocsOnboarding() {
   const docs = useApi<DocumentsResponse>('/v1/documents')
   const { upload, busy } = useDocUpload(docs.reload)
   const byType = (t: DocType) => docs.data?.documents.find((d) => d.type === t)
+  const nav = useNavigate()
   const done = ONBOARD.filter((d) => ['in_review', 'verified'].includes(byType(d.type)?.status ?? '')).length
+  const next = () => {
+    if (docs.loading) return toast('Checking your documents…')
+    const left = ONBOARD.filter((d) => !['in_review', 'verified'].includes(byType(d.type)?.status ?? ''))
+    if (left.length) return toast(`Upload ${left.map((d) => d.title).join(', ')} to continue`)
+    nav(P('1:708'))
+  }
   return (
     <Screen>
       <Header title="Verify your documents" to="/home" />
@@ -83,7 +91,7 @@ export function DocsOnboarding() {
       <Box x={20} y={717} w={372} h={56} r={16} bg="#e5f3f8" border="1px solid #c4e7f1" />
       <Ic icon={Clock} x={37} y={729} s={16} c="#145b73" />
       <T x={61} y={726} w={320} s={13.5} wt={500} lh={20.25} c="#145b73">Verification usually takes <b>2–24 hours</b>. We’ll notify you as each document is approved.</T>
-      <Btn y={792} label="CONTINUE TO BANK DETAILS" to={P('1:708')} />
+      <Btn y={792} label="CONTINUE TO BANK DETAILS" onClick={next} />
       <LinkText y={862} label="I’ll finish this later" to={P('1:814')} />
     </Screen>
   )
@@ -172,9 +180,11 @@ export function Vehicle() {
   const open = () => setEdit({ type: v.data?.type ?? me?.vehicle_type ?? 'motorbike', reg: v.data?.registration_number ?? '', model: v.data?.make_model ?? '', year: v.data?.year ? String(v.data.year) : '', colour: v.data?.colour ?? '', fuel: v.data?.fuel ?? 'petrol' })
   const save = async () => {
     if (!edit) return
+    const bad = vehicleRegError(edit.reg) || yearError(edit.year) || (edit.model.trim() && edit.model.trim().length < 2 ? 'Enter a valid make & model' : '')
+    if (bad) return toast(bad)
     setSaving(true)
     try {
-      await api('/v1/vehicle', { method: 'PUT', body: { type: edit.type, registrationNumber: edit.reg, makeModel: edit.model || undefined, year: edit.year ? Number(edit.year) : undefined, colour: edit.colour || undefined, fuel: edit.fuel } })
+      await api('/v1/vehicle', { method: 'PUT', body: { type: edit.type, registrationNumber: edit.reg.toUpperCase().replace(/\s+/g, ' ').trim(), makeModel: edit.model || undefined, year: edit.year ? Number(edit.year) : undefined, colour: edit.colour || undefined, fuel: edit.fuel } })
       toast('Vehicle saved')
       setEdit(null)
       await v.reload()

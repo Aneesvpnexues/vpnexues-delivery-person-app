@@ -7,6 +7,7 @@ import { date, useApi } from '../api/session'
 import { pickFile, submitDocument, uploadFile } from '../api/upload'
 import type { DocType, DocumentsResponse, PartnerDocument, PayoutMethod } from '../api/types'
 import { docPill } from './Docs'
+import { aadhaarError } from '../lib/validate'
 
 /* ---------------- Government ID (e-KYC) ---------------- */
 type Slot = { file: File; key?: string }
@@ -23,7 +24,7 @@ export function GovId() {
   const a = byType('aadhaar')
   const p = byType('pan')
   const submitted = [a, p].filter((d) => d && d.status !== 'rejected').length
-  const aadhaarOk = /^\d{12}$/.test(aadhaar.replace(/\s/g, ''))
+  const aadhaarOk = !aadhaarError(aadhaar)
   const panOk = /^[A-Z]{5}\d{4}[A-Z]$/.test(pan)
 
   const choose = async (t: 'aadhaar' | 'pan') => {
@@ -33,7 +34,7 @@ export function GovId() {
   const submit = async () => {
     const jobs: { type: 'aadhaar' | 'pan'; number: string }[] = []
     if (aadhaar || files.aadhaar) {
-      if (!aadhaarOk) return toast('Aadhaar number must be 12 digits')
+      if (!aadhaarOk) return toast(aadhaarError(aadhaar))
       if (!files.aadhaar) return toast('Add a photo of your Aadhaar card')
       jobs.push({ type: 'aadhaar', number: aadhaar.replace(/\s/g, '') })
     }

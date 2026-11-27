@@ -40,7 +40,7 @@ export default function Otp() {
       await signIn(t)
       // `pending` is left in place on purpose: router navigation is a deferred transition, so clearing it
       // here would re-render this screen first and bounce to /signup. The next sign-up/login overwrites it.
-      nav(isSignup ? '/password' : '/home', { replace: true })
+      nav(isSignup ? '/documents-onboarding' : '/home', { replace: true })
     } catch (e) {
       showError(e)
     } finally {

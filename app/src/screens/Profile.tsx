@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Activity, Bike, Camera, Check, ChevronRight, File, Globe, Landmark, Lock, LogOut, Mail, Map, MapPin, MessageCircle, Moon, Navigation, Shield, SlidersHorizontal, Star, TriangleAlert, User, Users, Volume1, Wallet, Zap, type LucideIcon } from 'lucide-react'
+import { Activity, Bike, Camera, Check, ChevronRight, File, Globe, Landmark, LogOut, Mail, Map, MapPin, MessageCircle, Moon, Navigation, Shield, SlidersHorizontal, Star, TriangleAlert, User, Users, Volume1, Wallet, Zap, type LucideIcon } from 'lucide-react'
 import { BottomNav, Box, Btn, C, Field, Header, Ic, Modal, P, Pill, Screen, T, Tile, Toggle, card, pill, toast } from '../components/kit'
+import { addressError, dobError, emailError } from '../lib/validate'
 import { api, showError } from '../api/client'
 import { LANGS, date, initials, maskPhone, useApi, useSession, type LangCode } from '../api/session'
 import type { DocumentsResponse, PayoutMethod, Vehicle } from '../api/types'
@@ -106,7 +107,8 @@ export function PersonalInfo() {
   const label = (x: number, y: number, t: ReactNode) => <T x={x} y={y} s={13} wt={600} lh={18.2}>{t}</T>
   const ec = contacts.data?.find((c) => c.is_primary) ?? contacts.data?.[0]
   const save = async () => {
-    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Enter a valid email address')
+    const bad = emailError(email) || dobError(dob) || addressError(addr)
+    if (bad) return toast(bad)
     setBusy(true)
     try {
       await api('/v1/me', { method: 'PATCH', body: { email: email.trim() || null, dateOfBirth: dob || null, bloodGroup: blood || null, address: addr.trim() || null } })
@@ -206,7 +208,6 @@ export function Settings() {
       ]} />
       {sec(728, 'SECURITY')}
       <Rows y={754} h={63} rows={[
-        { icon: Lock, title: 'Change password', right: chev, go: () => nav('/password?from=settings') },
         { icon: Shield, title: 'Fingerprint unlock', right: tg('fingerprint_unlock') },
       ]} />
       <T x={20} y={889} w={372} s={12} wt={700} lh={17} align="center" onClick={go('1:3185')}>About Vpnexues</T>

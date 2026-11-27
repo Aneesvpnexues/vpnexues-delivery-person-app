@@ -47,17 +47,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null)
   const [pending, setPendingState] = useState<PendingOtp | null>(readPending)
   const [trial, setTrial] = useState(false)
+  /** Bumped on every sign-out so a /v1/me request that was already in flight can't sign the partner back in. */
+  const epoch = useRef(0)
   useEffect(() => {
     fetch(API_URL + '/health/ready').then((r) => r.json()).then((h) => setTrial(!!h.trial)).catch(() => {})
   }, [])
 
   const refreshMe = useCallback(async () => {
+    const mine = epoch.current
     try {
       const m = await api<Me>('/v1/me')
+      if (mine !== epoch.current || !getTokens()) return null // signed out while this was loading
       setMe(m)
       setStatus('in')
       return m
     } catch (e) {
+      if (mine !== epoch.current) return null
       if (!getTokens()) setStatus('out')
       else { setStatus('in'); showError(e) }
       return null
@@ -65,15 +70,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => { if (getTokens()) void refreshMe() }, [refreshMe])
-  useEffect(() => onSessionLost(() => { setMe(null); setStatus('out'); toast('Your session ended. Please log in again.') }), [])
+  useEffect(() => onSessionLost(() => { epoch.current += 1; setMe(null); setStatus('out'); toast('Your session ended. Please log in again.') }), [])
 
   const signIn = useCallback(async (t: Tokens) => { setTokens(t); return refreshMe() }, [refreshMe])
   const signOut = useCallback(async () => {
     const t = getTokens()
-    if (t) await api('/v1/auth/logout', { body: { refreshToken: t.refreshToken }, auth: false }).catch(() => {})
+    // Sign out on this phone first, right away. Revoking the token on the server can take up to a minute when the
+    // free server is asleep, and must never keep the partner stuck on a screen they chose to leave.
+    epoch.current += 1
     setTokens(null)
     setMe(null)
+    setPendingState(null)
+    try { sessionStorage.removeItem(PENDING_KEY) } catch { /* ignore */ }
     setStatus('out')
+    if (t) void api('/v1/auth/logout', { body: { refreshToken: t.refreshToken }, auth: false }).catch(() => {})
   }, [])
 
   const setPending = useCallback((p: PendingOtp | null) => {

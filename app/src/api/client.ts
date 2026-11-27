@@ -89,7 +89,7 @@ export async function api<T = any>(path: string, o: Opts = {}): Promise<T> {
   if (res.status === 401 && auth && tokens) {
     if (await refresh()) {
       res = await send(path, o, tokens?.accessToken)
-    } else {
+    } else if (tokens) {
       setTokens(null)
       lostListeners.forEach((fn) => fn())
     }
@@ -103,4 +103,8 @@ export async function api<T = any>(path: string, o: Opts = {}): Promise<T> {
 }
 
 /** Show an API error to the partner. */
-export const showError = (e: unknown) => toast(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.')
+export const showError = (e: unknown) => {
+  // A leftover request from a screen the partner just logged out of: nothing worth telling them.
+  if (e instanceof ApiError && e.status === 401 && !tokens) return
+  toast(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.')
+}
