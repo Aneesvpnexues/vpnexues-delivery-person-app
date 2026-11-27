@@ -5,6 +5,7 @@ import { Box, Btn, C, Field, Header, Ic, LinkText, Modal, P, Pill, Screen, Steps
 import { api, showError } from '../api/client'
 import { date, inr, useApi, useSession } from '../api/session'
 import type { DocumentsResponse, EarningsSummary, PayoutMethod } from '../api/types'
+import { accountError, ifscError, nameError, upiError } from '../lib/validate'
 
 const hero = 'linear-gradient(125deg,#063a2a 0%,#1f7945 100%)'
 const chip = (on: boolean): React.CSSProperties => ({ height: 40, padding: '0 15px', borderRadius: 20, background: on ? C.green : '#fff', border: on ? 0 : `1px solid ${C.line}`, color: on ? '#fff' : C.ink, font: '700 13px/18.2px Inter', whiteSpace: 'nowrap' })
@@ -128,10 +129,13 @@ function BankForm({ top, v, set }: { top: number; v: BankValue; set: (v: BankVal
   )
 }
 async function saveBank(v: BankValue) {
-  if (v.name.trim().length < 2) { toast('Enter the account holder’s name'); return false }
-  if (v.acc.length < 9) { toast('Account number must be 9–18 digits'); return false }
+  const bad = nameError(v.name, 'the account holder’s name') || accountError(v.acc)
+  if (bad) { toast(bad); return false }
+  if (!v.acc2) { toast('Re-enter your account number'); return false }
   if (v.acc !== v.acc2) { toast('The account numbers don’t match'); return false }
-  if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(v.ifsc)) { toast('Enter a valid 11-character IFSC'); return false }
+  const ifsc = ifscError(v.ifsc)
+  if (ifsc) { toast(ifsc); return false }
+  if (v.bank.trim() && v.bank.trim().length < 3) { toast('Enter a valid bank name'); return false }
   try {
     await api('/v1/payout-methods', { body: { type: 'bank_account', accountHolderName: v.name.trim(), accountNumber: v.acc, confirmAccountNumber: v.acc2, ifsc: v.ifsc, bankName: v.bank.trim() || undefined, accountType: v.type, makePrimary: true } })
     toast('Bank account saved. Verification takes a few minutes.')
@@ -184,7 +188,8 @@ export function AddPayout() {
   const valid = /^[\w.-]{2,}@[a-z]{2,}$/i.test(upi)
   const bank = methods.data?.find((m) => m.type === 'bank_account')
   const save = async () => {
-    if (!valid) return toast('Enter a valid UPI ID, like name@okhdfcbank')
+    const bad = upiError(upi)
+    if (bad) return toast(bad)
     setBusy(true)
     try {
       await api('/v1/payout-methods', { body: { type: 'upi', upiVpa: upi.trim(), makePrimary: primary, keepBankAsBackup: backup } })
